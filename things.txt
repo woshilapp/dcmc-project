@@ -1,0 +1,31 @@
+TODO:
+    real:
+        add error to "protocol/format.go" Decode() #done
+        end protocol develop #done
+        eventmanager #done
+        bigEndian avoid merge and split #done
+        base room(server) #done
+        clear #done
+        auto tcp, udp punching hole(server) #done
+        
+        room #doing
+        auto tcp, udp punching hole(real)
+
+protocol:
+    type: string,
+    struct: type|data...
+        non-string: 1, true, 3.14159
+        string: replace all '|' to '\|'
+                and replace all '"' to '\"'
+
+    source and encode e.g.:
+        200 int, 1 int, asd7yu1\ string, \|~26du%^& string
+        200|1|"asd7yu1\"|"\\|~26du%^&"
+        
+        put string, hello string, true bool, 4.4 float
+        "put"|"hello"|true|4.4
+        
+        1 int, 1 int, 1 int, 1 int
+        1|1|1|1
+
+move protocol defines to protocol package

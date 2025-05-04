@@ -1,0 +1,97 @@
+--- format
+the packet format following this rules:
+
+required: len and code segment
+optional: any
+
+structure:
+    4bytes(len)+code|any1|any2...
+    (bytes, int, any, any...)
+
+--- descrpition
+client: include peer and host
+server: room list and punching helper
+peer: consumer of the game(or others) services
+host: provider of the services
+
+--- codes of protocol
+1xx: server
+    100: server hello:
+        fmt: 100 (int)
+    101: room list:
+        fmt 101|room1|room2... (int, string, string...)
+            room: room_id|room_name|descrpition|max_peer|curr_peer|need_password
+                  (int, string, int, int, int, bool)
+            // a packet include 10 room info
+    102: room list send finish:
+        fmt 102 (int)
+    110: enter room success:
+        fmt 110|room_id (int, int)
+    111: room is full:
+        fmt 111|room_id (int, int)
+    112: (to host) alloc room id:
+        fmt 112|room_id
+    113: broadcast msg:
+        fmt 113|broadcast_msg (int, string)
+    120: punching id:
+        fmt 120|punch_id (int, int)
+    121: (to host) new peer enter room:
+        fmt 121|punch_id (int, int)
+    122: notice punching:
+        fmt 122|punch_id|[peer_addr/host_addr] (int, int, string)
+    
+2xx: peer
+    200: peer hello:
+        fmt 200 (int)
+    201: enter room:
+        fmt 201|room_id (int, int)
+    202: request room list:
+        fmt 202 (int)
+    203: request punching(peer):
+        fmt 203|punch_id (int, int)
+    210: password:
+        fmt 210|password (int, string)
+    211: set name:
+        fmt 211|name (int, string)
+    212: request name list:
+        fmt 212 (int)
+    220: punch failed:
+        fmt 220|method|protocol|port (int, int, int, int)
+    230: msg:
+        fmt 230|msg (int, string)
+
+3xx: host
+    300: host hello:
+        fmt 300 (int)
+    301: new punching(port):
+        fmt 301 (int)
+    302: request punching(host):
+        fmt 302|punch_id (int, int)
+    310: new room:
+        fmt 310|room_name|max_peer|descrpition|need_password (int, string, int, string, bool)
+    311: delete room:
+        fmt 311|room_id (int, int)
+    312: update room status:
+        fmt 312|room_id|curr_peer|descrpition (int, int, int, string)
+    320: enter room success:
+        fmt 320 (int)
+    321: room required password:
+        fmt 321 (int)
+    322: password incorrect:
+        fmt 322 (int)
+    323: name already use:
+        fmt 323 (int)
+    324: name list:
+        fmt 324|name1|name2... (int, string, string...)
+    325: kicked:
+        fmt 325|reason (int, string)
+    326: banned:
+        fmt 326|reason|unban_time (int, string, string)
+    330: punching port:
+        fmt 330|punch_id|method|protocol|port (int, int, int, int, int)
+    340: msg:
+        fmt 340|name|msg (int, string, string)
+    341: broadcast:
+        fmt 341|broadcast_msg (int, string)
+    342: muted:
+        fmt 342|reason|unmute_time (int, string)

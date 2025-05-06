@@ -59,6 +59,7 @@ func handleEnterRoom(conn net.Conn, a ...any) {
 
 	// alloc punch session
 	punch_id := global.AllocPunchSession()
+	go punching.CleanPunchSession(punch_id)
 
 	// tell client
 	str, _ := proto.Encode(110, room.Id)
@@ -114,6 +115,7 @@ func handleReqPunchClient(conn net.Conn, a ...any) {
 // fmt 301 (int)
 func handlePunchPort(conn net.Conn, a ...any) {
 	punch_id := global.AllocPunchSession()
+	go punching.CleanPunchSession(punch_id) // haha we still need it
 
 	str, _ := proto.Encode(120, punch_id)
 	network.WriteMsg(conn, []byte(str))

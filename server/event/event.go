@@ -45,7 +45,6 @@ func handleHostHello(conn net.Conn, a ...any) {
 func handleEnterRoom(conn net.Conn, a ...any) {
 	//TODO: tell host new peer and punch_id
 	//		tell peer success or not and punch_id
-	//		start a punch thread
 	room, err := global.GetRoom(a[1].(int))
 	if err != nil {
 		return
@@ -59,18 +58,17 @@ func handleEnterRoom(conn net.Conn, a ...any) {
 	}
 
 	// alloc punch session
-	punch := global.AllocPunchSession()
-	go punching.PunchingThread(punch)
+	punch_id := global.AllocPunchSession()
 
 	// tell client
 	str, _ := proto.Encode(110, room.Id)
-	str1, _ := proto.Encode(120, punch.Id)
+	str1, _ := proto.Encode(120, punch_id)
 
 	network.WriteMsg(conn, []byte(str))
 	network.WriteMsg(conn, []byte(str1))
 
 	// tell host
-	str, _ = proto.Encode(121, punch.Id)
+	str, _ = proto.Encode(121, punch_id)
 	network.WriteMsg(room.HostConn, []byte(str))
 }
 
@@ -108,16 +106,16 @@ func handleReqPunchClient(conn net.Conn, a ...any) {
 	global.UpdatePunchSession(int(punch.Id), host_conn, conn)
 
 	if host_conn != nil {
-		punch.NoticePunch <- true
+		go punching.NoticePunching(int(punch.Id), conn, host_conn)
+		global.DeletePunchSession(int(punch.Id))
 	}
 }
 
 // fmt 301 (int)
 func handlePunchPort(conn net.Conn, a ...any) {
-	punch := global.AllocPunchSession()
-	go punching.PunchingThread(punch)
+	punch_id := global.AllocPunchSession()
 
-	str, _ := proto.Encode(120, punch.Id)
+	str, _ := proto.Encode(120, punch_id)
 	network.WriteMsg(conn, []byte(str))
 }
 
@@ -132,14 +130,15 @@ func handleReqPunchHost(conn net.Conn, a ...any) {
 	global.UpdatePunchSession(int(punch.Id), conn, peer_conn)
 
 	if peer_conn != nil {
-		punch.NoticePunch <- true
+		go punching.NoticePunching(int(punch.Id), conn, peer_conn)
+		global.DeletePunchSession(int(punch.Id))
 	}
 }
 
 // fmt 310|room_name|max_peer|descrpition|need_password (int, string, int, string, bool)
 func handleRegRoom(conn net.Conn, a ...any) {
 	for _, r := range global.GetRoomlist() { // A host a room
-		if r.HostConn.LocalAddr().String() == conn.RemoteAddr().String() {
+		if r.HostConn.RemoteAddr().String() == conn.RemoteAddr().String() {
 			return
 		}
 	}
@@ -157,7 +156,7 @@ func handleDeleteRoom(conn net.Conn, a ...any) {
 		return
 	}
 
-	if conn.RemoteAddr().String() != room.HostConn.LocalAddr().String() { // Avoid bad things
+	if conn.RemoteAddr().String() != room.HostConn.RemoteAddr().String() { // Avoid bad things
 		return
 	}
 
@@ -171,7 +170,7 @@ func handleUpdateRoom(conn net.Conn, a ...any) {
 		return
 	}
 
-	if conn.RemoteAddr().String() != room.HostConn.LocalAddr().String() { // Avoid bad things
+	if conn.RemoteAddr().String() != room.HostConn.RemoteAddr().String() { // Avoid bad things
 		return
 	}
 

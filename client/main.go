@@ -16,7 +16,7 @@ var serverconn net.Conn
 func makeServerConn(context *grumble.Context) error {
 	conn, err := net.Dial("tcp", context.Args.String("addr"))
 	if err != nil {
-		context.App.Println("[ERROR]", err)
+		context.App.Println("[ERRORc]", err)
 
 		return nil
 	}
@@ -35,7 +35,7 @@ func makeServerConn(context *grumble.Context) error {
 
 			data, err := network.ReadMsg(conn)
 			if err != nil {
-				context.App.Println("[ERROR]", err)
+				context.App.Println("[ERRORr]", err)
 
 				return
 			}
@@ -52,7 +52,7 @@ func sendToServer(context *grumble.Context) error {
 	err := network.WriteMsg(serverconn, []byte(context.Args.String("text")))
 
 	if err != nil {
-		context.App.Println("[ERROR]", err)
+		context.App.Println("[ERRORs", err)
 
 		return nil
 	}
@@ -83,7 +83,7 @@ func sendEncodedToServer(context *grumble.Context) error {
 	err := network.WriteMsg(serverconn, data)
 
 	if err != nil {
-		context.App.Println("[ERROR]", err)
+		context.App.Println("[ERRORs]", err)
 
 		return nil
 	}

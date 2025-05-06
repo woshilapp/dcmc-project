@@ -1,28 +1,30 @@
 package punching
 
 import (
+	"net"
 	"time"
 
 	"github.com/woshilapp/dcmc-project/client/network"
 	"github.com/woshilapp/dcmc-project/protocol"
-	"github.com/woshilapp/dcmc-project/server/global"
 )
 
-func PunchingThread(punch *global.Punch) {
-	ttimer := time.NewTimer(60 * time.Second)
+func NoticePunching(punch_id int, host_conn net.Conn, peer_conn net.Conn) {
+	timer := time.NewTimer(60 * time.Second)
 
-	select {
-	case <-punch.NoticePunch: //notice
-		to_host, _ := protocol.Encode(122, punch.Id, punch.PeerConn.RemoteAddr().String())
-		to_peer, _ := protocol.Encode(122, punch.Id, punch.HostConn.RemoteAddr().String())
-
-		network.WriteMsg(punch.HostConn, []byte(to_host))
-		network.WriteMsg(punch.PeerConn, []byte(to_peer))
-	case <-ttimer.C: //wait punching
-		//clear
-		punch.HostConn.Close()
-		punch.PeerConn.Close()
-		global.DeletePunchSession(int(punch.Id))
+	msgh, _ := protocol.Encode(122, punch_id, peer_conn.RemoteAddr().String())
+	errh := network.WriteMsg(host_conn, []byte(msgh))
+	if errh != nil {
 		return
 	}
+
+	msgp, _ := protocol.Encode(122, punch_id, host_conn.RemoteAddr().String())
+	errp := network.WriteMsg(peer_conn, []byte(msgp))
+	if errp != nil {
+		return
+	}
+
+	<-timer.C // wait punching
+
+	host_conn.Close()
+	peer_conn.Close()
 }

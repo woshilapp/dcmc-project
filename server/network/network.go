@@ -72,7 +72,7 @@ func cleanRoom(addr chan string) {
 	host_addr := <-addr
 
 	for _, r := range global.GetRoomlist() {
-		if r.HostConn.LocalAddr().String() == host_addr {
+		if r.HostConn.RemoteAddr().String() == host_addr {
 			global.RemoveRoom(int(r.Id))
 		}
 	}

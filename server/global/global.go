@@ -17,10 +17,9 @@ type Room struct {
 }
 
 type Punch struct {
-	Id          uint32
-	HostConn    net.Conn
-	PeerConn    net.Conn
-	NoticePunch chan bool
+	Id       uint32
+	HostConn net.Conn
+	PeerConn net.Conn
 }
 
 var room_id = 0
@@ -91,29 +90,27 @@ func UpdateRoom(id int, curr_peer int, description string) {
 	roomlist[uint32(id)].Description = description
 }
 
-func AllocPunchSession() *Punch {
+func AllocPunchSession() int {
 	punchlock.Lock()
 	defer punchlock.Unlock()
 
-	notice := make(chan bool, 1)
 	punchssn[uint32(punch_id)] = &Punch{
-		Id:          uint32(punch_id),
-		NoticePunch: notice,
+		Id: uint32(punch_id),
 	}
 
 	punch_id++
-	return punchssn[uint32(punch_id-1)]
+	return punch_id - 1
 }
 
-func GetPunchSession(id int) (*Punch, error) {
+func GetPunchSession(id int) (Punch, error) {
 	punchlock.RLock()
 	defer punchlock.RUnlock()
 
 	if _, exist := punchssn[uint32(id)]; exist {
-		return punchssn[uint32(id)], nil
+		return *punchssn[uint32(id)], nil
 	}
 
-	return &Punch{}, errors.New("doesn't exist")
+	return Punch{}, errors.New("doesn't exist")
 }
 
 func UpdatePunchSession(id int, host_conn net.Conn, peer_conn net.Conn) {

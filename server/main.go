@@ -23,6 +23,8 @@ func main() {
 
 	errchan := make(chan error, 100)
 
+	go network.ListenUDP(":7789", errchan)
+
 	go network.AccpetConn(listener, errchan)
 
 	go func() {

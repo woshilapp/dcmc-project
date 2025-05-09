@@ -10,6 +10,7 @@ import (
 	"github.com/woshilapp/dcmc-project/protocol"
 	_ "github.com/woshilapp/dcmc-project/server/event"
 	"github.com/woshilapp/dcmc-project/server/global"
+	"github.com/woshilapp/dcmc-project/server/punching"
 )
 
 const MaxMsgLength = 1024 * 10 //10KB
@@ -55,6 +56,36 @@ func ListenServer(addr string) (net.Listener, error) {
 	}
 
 	return listener, nil
+}
+
+func ListenUDP(addr string, errchan chan error) {
+	udpaddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		errchan <- err
+		return
+	}
+
+	udpconn, err := net.ListenUDP("udp", udpaddr)
+	if err != nil {
+		errchan <- err
+		return
+	}
+
+	global.UDPconn = udpconn
+
+	buf := make([]byte, 1440)
+
+	n, connaddr, err := udpconn.ReadFrom(buf)
+	if err != nil {
+		errchan <- err
+	}
+
+	event, err := protocol.Decode(string(buf[:n]))
+	if err != nil {
+		errchan <- err
+	}
+
+	go punching.HandleUDPPunch(event, connaddr)
 }
 
 func AccpetConn(listener net.Listener, errchan chan error) {

@@ -103,6 +103,10 @@ func handleReqPunchClient(conn net.Conn, a ...any) {
 		return
 	}
 
+	if punch.PeerAddr != nil || punch.HostAddr != nil { // tcp and udp not in same session
+		return
+	}
+
 	host_conn := punch.HostConn
 	global.UpdatePunchSession(int(punch.Id), host_conn, conn)
 
@@ -125,6 +129,10 @@ func handlePunchPort(conn net.Conn, a ...any) {
 func handleReqPunchHost(conn net.Conn, a ...any) {
 	punch, err := global.GetPunchSession(a[1].(int))
 	if err != nil {
+		return
+	}
+
+	if punch.PeerAddr != nil || punch.HostAddr != nil { // tcp and udp not in same session
 		return
 	}
 

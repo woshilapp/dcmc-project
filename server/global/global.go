@@ -18,12 +18,16 @@ type Room struct {
 
 type Punch struct {
 	Id       uint32
-	HostConn net.Conn
-	PeerConn net.Conn
+	HostConn net.Conn //tCP
+	HostAddr net.Addr //UDP
+	PeerConn net.Conn //TCP
+	PeerAddr net.Addr //UDP
 }
 
 var room_id = 0
 var punch_id = 0
+
+var UDPconn *net.UDPConn
 
 var (
 	punchlock sync.RWMutex
@@ -119,6 +123,14 @@ func UpdatePunchSession(id int, host_conn net.Conn, peer_conn net.Conn) {
 
 	punchssn[uint32(id)].HostConn = host_conn
 	punchssn[uint32(id)].PeerConn = peer_conn
+}
+
+func UpdateUDPPunchSession(id int, host_addr net.Addr, peer_addr net.Addr) {
+	punchlock.Lock()
+	defer punchlock.Unlock()
+
+	punchssn[uint32(id)].HostAddr = host_addr
+	punchssn[uint32(id)].PeerAddr = peer_addr
 }
 
 func DeletePunchSession(id int) {

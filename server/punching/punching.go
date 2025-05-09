@@ -22,6 +22,7 @@ func CleanPunchSession(punch_id int) {
 
 		if counter > 60 {
 			global.DeletePunchSession(punch_id)
+			return
 		}
 	}
 }

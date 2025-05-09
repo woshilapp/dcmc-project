@@ -73,19 +73,25 @@ func ListenUDP(addr string, errchan chan error) {
 
 	global.UDPconn = udpconn
 
-	buf := make([]byte, 1440)
+	for {
+		buf := make([]byte, 1440)
 
-	n, connaddr, err := udpconn.ReadFrom(buf)
-	if err != nil {
-		errchan <- err
+		n, connaddr, err := udpconn.ReadFrom(buf)
+		if err != nil {
+			errchan <- err
+		}
+
+		fmt.Println("[Recv UDP] From", connaddr, "say:", string(buf[:n]))
+
+		event, err := protocol.Decode(string(buf[:n]))
+		if err != nil {
+			fmt.Println("[Recv UDP] Decode Error:", err)
+		}
+
+		fmt.Println("[Recv] Event", event)
+
+		go punching.HandleUDPPunch(event, connaddr)
 	}
-
-	event, err := protocol.Decode(string(buf[:n]))
-	if err != nil {
-		errchan <- err
-	}
-
-	go punching.HandleUDPPunch(event, connaddr)
 }
 
 func AccpetConn(listener net.Listener, errchan chan error) {
@@ -123,11 +129,11 @@ func HandleConn(conn net.Conn, errchan chan error) {
 			break
 		}
 
-		fmt.Println("[Recv] From", conn.RemoteAddr().String(), "say:", string(data))
+		fmt.Println("[Recv TCP] From", conn.RemoteAddr().String(), "say:", string(data))
 
 		event, err := protocol.Decode(string(data))
 		if err != nil {
-			fmt.Println("[Recv] Decode Error:", err)
+			fmt.Println("[Recv TCP] Decode Error:", err)
 			continue
 		}
 

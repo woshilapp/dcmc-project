@@ -18,15 +18,19 @@ func vaildateUDPEvent(a ...any) error {
 		return errors.New("illegal event")
 	}
 
-	e := a[0].(int)
-
-	if e != 203 { // peer punch req
-		return errors.New("unsupported event")
-	} else if e != 302 { // host punch req
-		return errors.New("unsupported event")
+	if len(a) != 2 {
+		return errors.New("len mismatch")
 	}
 
-	return nil
+	e := a[0].(int)
+
+	if e == 203 { // peer punch req
+		return nil
+	} else if e == 302 { // host punch req
+		return nil
+	}
+
+	return errors.New("unsupported event")
 }
 
 func HandleUDPPunch(a []any, addr net.Addr) {
@@ -35,7 +39,7 @@ func HandleUDPPunch(a []any, addr net.Addr) {
 		return
 	}
 
-	if a[0] == 302 {
+	if a[0].(int) == 302 {
 		go handleUDPReqPunchHost(a, addr)
 	} else {
 		go handleUDPReqPunchPeer(a, addr)
@@ -49,6 +53,7 @@ func handleUDPReqPunchPeer(a []any, addr net.Addr) {
 	}
 
 	host_addr := punch.HostAddr
+	global.UpdateUDPPunchSession(int(punch.Id), host_addr, addr)
 
 	if host_addr != nil {
 		go noticeUDPPunching(int(punch.Id), host_addr, addr)

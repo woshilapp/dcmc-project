@@ -24,6 +24,7 @@ func main() {
 	errchan := make(chan error, 100)
 
 	go network.ListenUDP(":7789", errchan)
+	fmt.Println("Listening on Port udp:7789")
 
 	go network.AccpetConn(listener, errchan)
 

@@ -52,6 +52,10 @@ func handleUDPReqPunchPeer(a []any, addr net.Addr) {
 		return
 	}
 
+	if punch.PeerConn != nil || punch.HostConn != nil {
+		return
+	}
+
 	host_addr := punch.HostAddr
 	global.UpdateUDPPunchSession(int(punch.Id), host_addr, addr)
 
@@ -64,6 +68,10 @@ func handleUDPReqPunchPeer(a []any, addr net.Addr) {
 func handleUDPReqPunchHost(a []any, addr net.Addr) {
 	punch, err := global.GetPunchSession(a[1].(int))
 	if err != nil {
+		return
+	}
+
+	if punch.PeerConn != nil || punch.HostConn != nil { //no same
 		return
 	}
 

@@ -10,7 +10,6 @@ import (
 	"github.com/woshilapp/dcmc-project/protocol"
 	_ "github.com/woshilapp/dcmc-project/server/event"
 	"github.com/woshilapp/dcmc-project/server/global"
-	"github.com/woshilapp/dcmc-project/server/punching"
 )
 
 const MaxMsgLength = 1024 * 10 //10KB
@@ -71,8 +70,6 @@ func ListenUDP(addr string, errchan chan error) {
 		return
 	}
 
-	global.UDPconn = udpconn
-
 	for {
 		buf := make([]byte, 1440)
 
@@ -90,7 +87,13 @@ func ListenUDP(addr string, errchan chan error) {
 
 		fmt.Println("[Recv] Event", event)
 
-		go punching.HandleUDPPunch(event, connaddr)
+		err = protocol.VaildateEvent(event...)
+		if err != nil {
+			fmt.Println("[Recv] Bad event:", err)
+			continue
+		}
+
+		protocol.ExecUDPEvent(udpconn, connaddr, event...)
 	}
 }
 
@@ -145,6 +148,6 @@ func HandleConn(conn net.Conn, errchan chan error) {
 			continue
 		}
 
-		protocol.ExecEvent(conn, event...)
+		protocol.ExecTCPEvent(conn, event...)
 	}
 }

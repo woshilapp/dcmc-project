@@ -11,20 +11,24 @@ import (
 
 func init() {
 	//hello
-	proto.RegEvent(200, handlePeerHello)
-	proto.RegEvent(300, handleHostHello)
+	proto.RegTCPEvent(200, handlePeerHello)
+	proto.RegTCPEvent(300, handleHostHello)
 
 	//room
-	proto.RegEvent(201, handleEnterRoom, proto.IntType)
-	proto.RegEvent(202, handleReqRoomlist)
-	proto.RegEvent(301, handlePunchPort)
-	proto.RegEvent(310, handleRegRoom, proto.StringType, proto.IntType, proto.StringType, proto.BoolType)
-	proto.RegEvent(311, handleDeleteRoom, proto.IntType)
-	proto.RegEvent(312, handleUpdateRoom, proto.IntType, proto.IntType, proto.StringType)
+	proto.RegTCPEvent(201, handleEnterRoom, proto.IntType)
+	proto.RegTCPEvent(202, handleReqRoomlist)
+	proto.RegTCPEvent(301, handlePunchPort)
+	proto.RegTCPEvent(310, handleRegRoom, proto.StringType, proto.IntType, proto.StringType, proto.BoolType)
+	proto.RegTCPEvent(311, handleDeleteRoom, proto.IntType)
+	proto.RegTCPEvent(312, handleUpdateRoom, proto.IntType, proto.IntType, proto.StringType)
 
 	//punching
-	proto.RegEvent(203, handleReqPunchClient, proto.IntType)
-	proto.RegEvent(302, handleReqPunchHost, proto.IntType)
+	proto.RegTCPEvent(203, handleReqPunchClient, proto.IntType)
+	proto.RegTCPEvent(302, handleReqPunchHost, proto.IntType)
+
+	//punching udp
+	proto.RegUDPEvent(203, handleUDPReqPunchPeer, proto.IntType)
+	proto.RegUDPEvent(302, handleUDPReqPunchHost, proto.IntType)
 }
 
 // fmt 200 (int)
@@ -189,4 +193,44 @@ func handleUpdateRoom(conn net.Conn, a ...any) {
 	}
 
 	global.UpdateRoom(a[1].(int), a[2].(int), a[3].(string))
+}
+
+// fmt 203|punch_id (int, int)
+func handleUDPReqPunchPeer(conn *net.UDPConn, addr net.Addr, a ...any) {
+	punch, err := global.GetPunchSession(a[1].(int))
+	if err != nil {
+		return
+	}
+
+	if punch.PeerConn != nil || punch.HostConn != nil {
+		return
+	}
+
+	host_addr := punch.HostAddr
+	global.UpdateUDPPunchSession(int(punch.Id), host_addr, addr)
+
+	if host_addr != nil {
+		go punching.NoticeUDPPunching(conn, int(punch.Id), host_addr, addr)
+		global.DeletePunchSession(int(punch.Id))
+	}
+}
+
+// fmt 302|punch_id (int, int)
+func handleUDPReqPunchHost(conn *net.UDPConn, addr net.Addr, a ...any) {
+	punch, err := global.GetPunchSession(a[1].(int))
+	if err != nil {
+		return
+	}
+
+	if punch.PeerConn != nil || punch.HostConn != nil { //no same
+		return
+	}
+
+	peer_addr := punch.PeerAddr
+	global.UpdateUDPPunchSession(int(punch.Id), addr, peer_addr)
+
+	if peer_addr != nil {
+		go punching.NoticeUDPPunching(conn, int(punch.Id), addr, peer_addr)
+		global.DeletePunchSession(int(punch.Id))
+	}
 }

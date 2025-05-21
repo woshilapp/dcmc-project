@@ -18,7 +18,7 @@ type Room struct {
 
 type Punch struct {
 	Id       uint32
-	HostConn net.Conn //tCP
+	HostConn net.Conn //TCP
 	HostAddr net.Addr //UDP
 	PeerConn net.Conn //TCP
 	PeerAddr net.Addr //UDP
@@ -26,8 +26,6 @@ type Punch struct {
 
 var room_id = 0
 var punch_id = 0
-
-var UDPconn *net.UDPConn
 
 var (
 	punchlock sync.RWMutex

@@ -7,7 +7,9 @@ TODO:
         base room(server) #done
         clear #done
         auto tcp, udp punching hole(server) #done
-        
+        update protocol.go #done
+
+        addr check
         room #doing
         auto tcp, udp punching hole(real)
 

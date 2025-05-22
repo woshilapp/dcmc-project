@@ -87,7 +87,7 @@ func ListenUDP(addr string, errchan chan error) {
 
 		fmt.Println("[Recv] Event", event)
 
-		err = protocol.VaildateEvent(event...)
+		err = protocol.VaildateUDPEvent(event...)
 		if err != nil {
 			fmt.Println("[Recv] Bad event:", err)
 			continue
@@ -142,7 +142,7 @@ func HandleConn(conn net.Conn, errchan chan error) {
 
 		fmt.Println("[Recv] Event", event)
 
-		err = protocol.VaildateEvent(event...)
+		err = protocol.VaildateTCPEvent(event...)
 		if err != nil {
 			fmt.Println("[Recv] Bad event:", err)
 			continue

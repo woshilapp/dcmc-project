@@ -1,3 +1,3 @@
 title host
 
-go run .\main.go
+go run .\

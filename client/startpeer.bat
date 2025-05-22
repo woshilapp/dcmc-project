@@ -1,3 +1,3 @@
 title peer
 
-go run .\main.go
+go run .\

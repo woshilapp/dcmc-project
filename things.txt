@@ -8,8 +8,8 @@ TODO:
         clear #done
         auto tcp, udp punching hole(server) #done
         update protocol.go #done
-
-        addr check
+        addr check #done
+        
         room #doing
         auto tcp, udp punching hole(real)
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/woshilapp/dcmc-project/client/event"
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/shell"
 	term "github.com/woshilapp/dcmc-project/terminal"
@@ -38,6 +39,12 @@ func main() {
 	go recvUDP()
 
 	shell.InitCommand()
+
+	if global.Role == 1 {
+		event.InitPeerEvent()
+	} else {
+		event.InitHostEvent()
+	}
 
 	global.App.Run()
 }

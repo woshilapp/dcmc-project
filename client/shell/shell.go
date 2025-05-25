@@ -12,7 +12,7 @@ import (
 )
 
 func InitCommand() {
-	term.AddCommand(global.App, "connect", "connect to server", []string{"addr"}, makeServerConn)
+	term.AddCommand(global.App, "connect", "connect to server", []string{"addr"}, connectToServer)
 
 	term.AddCommand(global.App, "send", "send tcp data to server", []string{"text"}, sendToServer)
 
@@ -21,7 +21,7 @@ func InitCommand() {
 	term.AddMultiArgCommand(global.App, "sendudpencode", "send udp encoded data to server", "data", sendUDPEncodedToServer)
 }
 
-func makeServerConn(context *grumble.Context) error {
+func connectToServer(context *grumble.Context) error {
 	conn, err := net.Dial("tcp", context.Args.String("addr"))
 	if err != nil {
 		context.App.Println("[ERRORc]", err)
@@ -36,11 +36,24 @@ func makeServerConn(context *grumble.Context) error {
 			data, err := network.ReadMsg(conn)
 			if err != nil {
 				context.App.Println("[ERRORrt]", err)
-
 				return
 			}
 
 			context.App.Println("[Recv Server TCP]", string(data))
+
+			event, err := protocol.Decode(string(data))
+			if err != nil {
+				context.App.Println("[ERRORdc]", err)
+				continue
+			}
+
+			err = protocol.VaildateTCPEvent(event...)
+			if err != nil {
+				context.App.Println("[BADEvent]", err, event)
+				continue
+			}
+
+			protocol.ExecTCPEvent(global.Serverconn, event...)
 		}
 	}()
 

@@ -3,7 +3,7 @@ package event
 import (
 	"net"
 
-	"github.com/woshilapp/dcmc-project/client/network"
+	netdata "github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 )
 
@@ -14,5 +14,5 @@ func InitPeerEvent() {
 func responeServerHello(conn net.Conn, args ...any) {
 	str, _ := protocol.Encode(200)
 
-	network.WriteMsg(conn, []byte(str))
+	netdata.WriteMsg(conn, []byte(str))
 }

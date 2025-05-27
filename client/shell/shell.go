@@ -7,6 +7,7 @@ import (
 	"github.com/desertbit/grumble"
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
+	netdata "github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	term "github.com/woshilapp/dcmc-project/terminal"
 )
@@ -31,38 +32,14 @@ func connectToServer(context *grumble.Context) error {
 
 	global.Serverconn = conn
 
-	go func() {
-		for {
-			data, err := network.ReadMsg(conn)
-			if err != nil {
-				context.App.Println("[ERRORrt]", err)
-				return
-			}
-
-			context.App.Println("[Recv Server TCP]", string(data))
-
-			event, err := protocol.Decode(string(data))
-			if err != nil {
-				context.App.Println("[ERRORdc]", err)
-				continue
-			}
-
-			err = protocol.VaildateTCPEvent(event...)
-			if err != nil {
-				context.App.Println("[BADEvent]", err, event)
-				continue
-			}
-
-			protocol.ExecTCPEvent(global.Serverconn, event...)
-		}
-	}()
+	go network.ListenConn(conn)
 
 	return nil
 }
 
 func sendToServer(context *grumble.Context) error {
 	// _, err := serverconn.Write([]byte(context.Args.String("text")))
-	err := network.WriteMsg(global.Serverconn, []byte(context.Args.String("text")))
+	err := netdata.WriteMsg(global.Serverconn, []byte(context.Args.String("text")))
 
 	if err != nil {
 		context.App.Println("[ERRORst]", err)
@@ -93,7 +70,7 @@ func sendEncodedToServer(context *grumble.Context) error {
 	data := []byte(tmp)
 
 	// _, err := serverconn.Write(data)
-	err := network.WriteMsg(global.Serverconn, data)
+	err := netdata.WriteMsg(global.Serverconn, data)
 
 	if err != nil {
 		context.App.Println("[ERRORst]", err)

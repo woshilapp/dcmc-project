@@ -1,51 +1,16 @@
 package network
 
 import (
-	"encoding/binary"
-	"errors"
 	"fmt"
-	"io"
 	"net"
 
+	"github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	_ "github.com/woshilapp/dcmc-project/server/event"
 	"github.com/woshilapp/dcmc-project/server/global"
 )
 
 const MaxMsgLength = 1024 * 10 //10KB
-
-func WriteMsg(conn net.Conn, data []byte) error {
-	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
-
-	fullMsg := append(header, data...)
-
-	_, err := conn.Write(fullMsg)
-	return err
-}
-
-func ReadMsg(conn net.Conn) ([]byte, error) {
-	// set timeout
-	// conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	// defer conn.SetReadDeadline(time.Time{}) // reset
-
-	header := make([]byte, 4)
-	if _, err := io.ReadFull(conn, header); err != nil {
-		return nil, err
-	}
-
-	length := binary.BigEndian.Uint32(header)
-	if length > MaxMsgLength {
-		return nil, errors.New("message too long")
-	}
-
-	body := make([]byte, length)
-	if _, err := io.ReadFull(conn, body); err != nil {
-		return nil, err
-	}
-
-	return body, nil
-}
 
 func ListenServer(addr string) (net.Listener, error) {
 	listener, err := net.Listen("tcp", addr)
@@ -125,7 +90,7 @@ func HandleConn(conn net.Conn, errchan chan error) {
 	go cleanRoom(deadChan)
 
 	for {
-		data, err := ReadMsg(conn)
+		data, err := network.ReadMsg(conn)
 		if err != nil {
 			errchan <- err
 			deadChan <- conn.RemoteAddr().String()

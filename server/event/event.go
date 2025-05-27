@@ -3,7 +3,7 @@ package event
 import (
 	"net"
 
-	"github.com/woshilapp/dcmc-project/client/network"
+	"github.com/woshilapp/dcmc-project/network"
 	proto "github.com/woshilapp/dcmc-project/protocol"
 	"github.com/woshilapp/dcmc-project/server/global"
 	"github.com/woshilapp/dcmc-project/server/punching"

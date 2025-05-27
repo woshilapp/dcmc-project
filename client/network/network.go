@@ -1,44 +1,35 @@
 package network
 
 import (
-	"encoding/binary"
-	"errors"
-	"io"
 	"net"
+
+	"github.com/woshilapp/dcmc-project/client/global"
+	"github.com/woshilapp/dcmc-project/network"
+	"github.com/woshilapp/dcmc-project/protocol"
 )
 
-const MaxMsgLength = 1024 * 10 //10KB
+func ListenConn(conn net.Conn) {
+	for {
+		data, err := network.ReadMsg(conn)
+		if err != nil {
+			global.App.Println("[ERRORrt]", err)
+			return
+		}
 
-func WriteMsg(conn net.Conn, data []byte) error {
-	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
+		global.App.Println("[Recv Server TCP]", string(data))
 
-	fullMsg := append(header, data...)
+		event, err := protocol.Decode(string(data))
+		if err != nil {
+			global.App.Println("[ERRORdc]", err)
+			continue
+		}
 
-	_, err := conn.Write(fullMsg)
-	return err
-}
+		err = protocol.VaildateTCPEvent(event...)
+		if err != nil {
+			global.App.Println("[BADEvent]", err, event)
+			continue
+		}
 
-func ReadMsg(conn net.Conn) ([]byte, error) {
-	// // set timeout
-	// conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	// defer conn.SetReadDeadline(time.Time{}) // reset
-
-	header := make([]byte, 4)
-	if _, err := io.ReadFull(conn, header); err != nil {
-		return nil, err
+		protocol.ExecTCPEvent(global.Serverconn, event...)
 	}
-
-	length := binary.BigEndian.Uint32(header)
-	if length > MaxMsgLength {
-		println(length)
-		return nil, errors.New("message too long")
-	}
-
-	body := make([]byte, length)
-	if _, err := io.ReadFull(conn, body); err != nil {
-		return nil, err
-	}
-
-	return body, nil
 }

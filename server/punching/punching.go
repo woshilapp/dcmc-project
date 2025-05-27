@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/woshilapp/dcmc-project/client/network"
+	"github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	"github.com/woshilapp/dcmc-project/server/global"
 )

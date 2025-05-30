@@ -6,6 +6,17 @@ import (
 	"github.com/desertbit/grumble"
 )
 
+type Room struct {
+	Id          uint32
+	Name        string
+	Description string
+	MaxPeer     int
+	CurrPeer    int
+	RequiredPwd bool
+}
+
+var Roomlist []Room = []Room{}
+
 var Serverconn net.Conn
 var Serveraddr net.Addr
 var Udpsock *net.UDPConn

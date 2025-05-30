@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	IntType    = "int"
-	StringType = "string"
-	BoolType   = "bool"
-	FloatType  = "float64"
+	IntType       = "int"
+	StringType    = "string"
+	BoolType      = "bool"
+	FloatType     = "float64"
+	StringAnyType = "stringany" //any number string
 )
 
 type tcpevent struct {
@@ -66,10 +67,24 @@ func VaildateTCPEvent(a ...any) error {
 	}
 
 	if len(a) != event.len {
-		return errors.New("len mismatch")
+		for i, v := range event.types {
+			if v != "stringany" && i == event.len-1 {
+				return errors.New("len mismatch")
+			}
+		}
 	}
 
 	for i := 0; i < len(a)-1; i++ {
+		if event.types[i] == "stringany" {
+			for j := i; j < len(a)-1; j++ {
+				if typeof(a[j+1]) != "string" {
+					return errors.New("type mismatch")
+				}
+			}
+
+			return nil
+		}
+
 		if typeof(a[i+1]) != event.types[i] {
 			return errors.New("type mismatch")
 		}
@@ -94,10 +109,24 @@ func VaildateUDPEvent(a ...any) error {
 	}
 
 	if len(a) != event.len {
-		return errors.New("len mismatch")
+		for i, v := range event.types {
+			if v != "stringany" && i == event.len-1 {
+				return errors.New("len mismatch")
+			}
+		}
 	}
 
 	for i := 0; i < len(a)-1; i++ {
+		if event.types[i] == "stringany" {
+			for j := i; j < len(a)-1; j++ {
+				if typeof(a[j+1]) != "string" {
+					return errors.New("type mismatch")
+				}
+			}
+
+			return nil
+		}
+
 		if typeof(a[i+1]) != event.types[i] {
 			return errors.New("type mismatch")
 		}

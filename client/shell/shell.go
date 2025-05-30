@@ -14,12 +14,10 @@ import (
 
 func InitCommand() {
 	term.AddCommand(global.App, "connect", "connect to server", []string{"addr"}, connectToServer)
-
 	term.AddCommand(global.App, "send", "send tcp data to server", []string{"text"}, sendToServer)
-
 	term.AddMultiArgCommand(global.App, "sendencode", "send tcp encoded data to server", "data", sendEncodedToServer)
-
 	term.AddMultiArgCommand(global.App, "sendudpencode", "send udp encoded data to server", "data", sendUDPEncodedToServer)
+	term.AddCommand(global.App, "list", "list rooms on server", []string{}, listRoom)
 }
 
 func connectToServer(context *grumble.Context) error {
@@ -33,6 +31,9 @@ func connectToServer(context *grumble.Context) error {
 	global.Serverconn = conn
 
 	go network.ListenConn(conn)
+
+	str, _ := protocol.Encode(200)
+	netdata.WriteMsg(conn, []byte(str))
 
 	return nil
 }
@@ -107,6 +108,15 @@ func sendUDPEncodedToServer(context *grumble.Context) error {
 
 		return nil
 	}
+
+	return nil
+}
+
+func listRoom(context *grumble.Context) error {
+	global.Roomlist = []global.Room{}
+
+	str, _ := protocol.Encode(202)
+	netdata.WriteMsg(global.Serverconn, []byte(str))
 
 	return nil
 }

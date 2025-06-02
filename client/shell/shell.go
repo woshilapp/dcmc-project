@@ -32,7 +32,15 @@ func connectToServer(context *grumble.Context) error {
 
 	go network.ListenConn(conn)
 
-	str, _ := protocol.Encode(200)
+	var helloInt int
+
+	if global.Role == 1 {
+		helloInt = 200
+	} else {
+		helloInt = 300
+	}
+
+	str, _ := protocol.Encode(helloInt) //send hello to server
 	netdata.WriteMsg(conn, []byte(str))
 
 	return nil

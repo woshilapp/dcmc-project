@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/woshilapp/dcmc-project/client/event"
 	"github.com/woshilapp/dcmc-project/client/global"
@@ -29,6 +31,20 @@ func recvUDP() {
 func main() {
 	//Welcome text
 	fmt.Println("Hello, world client!")
+
+	var role int = 0
+	flag.IntVar(&role, "role", 0, "1:peer, 2:host")
+	flag.Parse()
+
+	if role == 0 {
+		flag.PrintDefaults()
+		return
+	}
+
+	global.Role = role
+
+	originalArgs := os.Args
+	os.Args = []string{originalArgs[0]}
 
 	global.App = term.NewTerminal("dcmc-project client")
 

@@ -36,6 +36,17 @@ func recvRoomList(conn net.Conn, args ...any) {
 
 func printRoomList(conn net.Conn, args ...any) {
 	for _, v := range global.Roomlist {
-		global.App.Println(v.Id, v.Name, v.Description, v.MaxPeer, v.CurrPeer, v.RequiredPwd)
+		// global.App.Println(
+		// 	v.Id,
+		// 	v.Name,
+		// 	v.Description,
+		// 	v.MaxPeer,
+		// 	v.CurrPeer,
+		// 	v.RequiredPwd,
+		// )
+
+		// time.Sleep(1000 * time.Millisecond)
+
+		global.App.Printf("%+v\n", v)
 	}
 }

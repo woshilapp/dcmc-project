@@ -10,8 +10,6 @@ import (
 	"github.com/woshilapp/dcmc-project/server/global"
 )
 
-const MaxMsgLength = 1024 * 10 //10KB
-
 func ListenServer(addr string) (net.Listener, error) {
 	listener, err := net.Listen("tcp", addr)
 

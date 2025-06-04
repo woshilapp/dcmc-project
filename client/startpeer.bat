@@ -1,3 +1,3 @@
 title peer
 
-go run .\
+go run .\ -role 1

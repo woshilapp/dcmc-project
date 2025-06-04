@@ -9,7 +9,7 @@ import (
 func NewTerminal(name string) *grumble.App {
 	return grumble.New(&grumble.Config{
 		Name:        name,
-		Description: "dcmc-project terminal",
+		Description: name,
 
 		Prompt: ">",
 	})

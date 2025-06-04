@@ -56,6 +56,7 @@ func main() {
 
 	shell.InitCommand()
 
+	event.InitEvent()
 	if global.Role == 1 {
 		event.InitPeerEvent()
 	} else {

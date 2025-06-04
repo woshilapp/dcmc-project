@@ -16,6 +16,7 @@ type Room struct {
 }
 
 var Roomlist []Room = []Room{}
+var CurrRoom Room
 
 var Serverconn net.Conn
 var Serveraddr net.Addr

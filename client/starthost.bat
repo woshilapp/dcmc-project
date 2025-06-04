@@ -1,3 +1,3 @@
 title host
 
-go run .\
+go run .\ -role 2

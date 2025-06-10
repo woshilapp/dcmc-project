@@ -16,7 +16,7 @@ func execsb(conn net.Conn, args ...any) {
 	}
 }
 
-func main() {
+func main1() {
 	protocol.Run()
 
 	// protocol.RegTCPEvent(100, protocol.IntType, protocol.BoolType, protocol.StringType)

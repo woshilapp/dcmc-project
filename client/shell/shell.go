@@ -13,11 +13,33 @@ import (
 )
 
 func InitCommand() {
-	term.AddCommand(global.App, "connect", "connect to server", []string{"addr"}, connectToServer)
-	term.AddCommand(global.App, "send", "send tcp data to server", []string{"text"}, sendToServer)
-	term.AddMultiArgCommand(global.App, "sendencode", "send tcp encoded data to server", "data", sendEncodedToServer)
-	term.AddMultiArgCommand(global.App, "sendudpencode", "send udp encoded data to server", "data", sendUDPEncodedToServer)
-	term.AddCommand(global.App, "list", "list rooms on server", []string{}, listRoom)
+	term.AddCommand(global.App, "connect", "connect to server",
+		[]string{"addr"}, "",
+		connectToServer)
+
+	term.AddCommand(global.App, "send", "send tcp data to server",
+		[]string{"text"}, "",
+		sendToServer)
+
+	term.AddCommand(global.App, "sendencode", "send tcp encoded data to server",
+		[]string{}, "data",
+		sendEncodedToServer)
+
+	term.AddCommand(global.App, "sendudpencode", "send udp encoded data to server",
+		[]string{}, "data",
+		sendUDPEncodedToServer)
+
+	term.AddCommand(global.App, "list", "list rooms on server",
+		[]string{}, "",
+		listRoom)
+
+	term.AddCommand(global.App, "enter", "enter a room",
+		[]string{"id"}, "",
+		enterRoom)
+
+	term.AddCommand(global.App, "create", "create a room",
+		[]string{"name", "max_peer", "desc"}, "pwd",
+		createRoom)
 }
 
 func connectToServer(context *grumble.Context) error {
@@ -124,6 +146,62 @@ func listRoom(context *grumble.Context) error {
 	global.Roomlist = []global.Room{}
 
 	str, _ := protocol.Encode(202)
+	netdata.WriteMsg(global.Serverconn, []byte(str))
+
+	return nil
+}
+
+func enterRoom(context *grumble.Context) error {
+	if global.Role != 1 {
+		return nil
+	}
+
+	id, err := strconv.Atoi(context.Args.String("id"))
+	if err != nil {
+		global.App.Println("Bad room id")
+		return nil
+	}
+
+	str, _ := protocol.Encode(201, id)
+	netdata.WriteMsg(global.Serverconn, []byte(str))
+
+	return nil
+}
+
+func createRoom(context *grumble.Context) error {
+	if global.Role != 2 {
+		return nil
+	}
+
+	maxpeer, err := strconv.Atoi(context.Args.String("max_peer"))
+	if err != nil {
+		return nil
+	}
+
+	arglist := context.Args.StringList("pwd")
+	reqpwd := false
+	pwd := ""
+
+	if len(arglist) != 0 {
+		reqpwd = true
+		pwd = arglist[0]
+	}
+
+	global.CurrRoom = global.Room{
+		Name:        context.Args.String("name"),
+		Description: context.Args.String("desc"),
+		MaxPeer:     maxpeer,
+		CurrPeer:    0,
+		RequiredPwd: reqpwd,
+		Passwd:      pwd,
+	}
+
+	str, _ := protocol.Encode(310, global.CurrRoom.Name,
+		global.CurrRoom.MaxPeer,
+		global.CurrRoom.Description,
+		global.CurrRoom.RequiredPwd,
+	)
+
 	netdata.WriteMsg(global.Serverconn, []byte(str))
 
 	return nil

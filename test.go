@@ -8,7 +8,7 @@ import (
 	"github.com/desertbit/grumble"
 )
 
-func main1() {
+func main() {
 	app := grumble.New(&grumble.Config{
 		Name:        "app",
 		Description: "short app description",
@@ -52,7 +52,8 @@ func main1() {
 		Aliases: []string{"sl"},
 
 		Args: func(a *grumble.Args) {
-			a.StringList("output", "output string", grumble.Default("log"))
+			// a.StringList("output", "output string", grumble.Default("log"))
+			a.StringList("output", "output string")
 		},
 
 		Run: func(c *grumble.Context) error {

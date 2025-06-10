@@ -12,6 +12,7 @@ type Room struct {
 	Description string
 	MaxPeer     int
 	CurrPeer    int
+	Passwd      string //only host
 	RequiredPwd bool
 }
 

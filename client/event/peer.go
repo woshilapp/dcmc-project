@@ -5,6 +5,7 @@ import (
 
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/protocol"
+	"github.com/woshilapp/dcmc-project/terminal"
 )
 
 func InitPeerEvent() {
@@ -16,7 +17,7 @@ func handleEnterRoom(conn net.Conn, args ...any) {
 	global.CurrRoom = global.Roomlist[args[1].(int)]
 
 	global.App.Println("Enter Room Success, Trying connect to host...")
-	global.App.SetPrompt(global.CurrRoom.Name + ">")
+	terminal.SetPrompt(global.App, global.CurrRoom.Name+">")
 }
 
 func handleRoomFull(conn net.Conn, args ...any) {

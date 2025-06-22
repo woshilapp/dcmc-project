@@ -193,8 +193,10 @@ func createRoom(context *grumble.Context) error {
 		MaxPeer:     maxpeer,
 		CurrPeer:    0,
 		RequiredPwd: reqpwd,
-		Passwd:      pwd,
 	}
+
+	global.Host.Passwd = pwd
+	global.Host.Status = 1
 
 	str, _ := protocol.Encode(310, global.CurrRoom.Name,
 		global.CurrRoom.MaxPeer,

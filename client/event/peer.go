@@ -19,14 +19,29 @@ func InitPeerEvent() {
 }
 
 func handleEnterRoom(conn net.Conn, args ...any) {
-	global.CurrRoom = global.Roomlist[args[1].(int)]
+	room_id := args[1].(int)
+
+	for _, r := range global.Roomlist {
+		if r.Id == uint32(room_id) {
+			global.CurrRoom = r
+		}
+	}
 
 	global.App.Println("Enter Room Success, Trying connect to host...")
 	terminal.SetPrompt(global.App, global.CurrRoom.Name+">")
 }
 
 func handleRoomFull(conn net.Conn, args ...any) {
-	global.App.Println(global.Roomlist[args[1].(int)].Name + ": Room is full")
+	room_id := args[1].(int)
+	room_name := ""
+
+	for _, r := range global.Roomlist {
+		if r.Id == uint32(room_id) {
+			room_name = r.Name
+		}
+	}
+
+	global.App.Println(room_name+": Room is full, ID:", room_id)
 }
 
 func handlePunchHostID(conn net.Conn, args ...any) {
@@ -39,6 +54,8 @@ func handlePunchHostID(conn net.Conn, args ...any) {
 		fmt.Println("Punch connect server failed")
 		return
 	}
+
+	go network.HandleConn(tmp_conn)
 
 	str, _ := protocol.Encode(203, punch_id)
 	netdata.WriteMsg(tmp_conn, []byte(str))

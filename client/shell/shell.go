@@ -51,8 +51,9 @@ func connectToServer(context *grumble.Context) error {
 	}
 
 	global.Serverconn = conn
+	global.Serveraddr, _ = net.ResolveTCPAddr("tcp", context.Args.String("addr"))
 
-	go network.ListenConn(conn)
+	go network.HandleConn(conn)
 
 	var helloInt int
 

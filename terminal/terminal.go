@@ -21,12 +21,12 @@ func AddCommand(app *grumble.App, name string, help string, args []string, lista
 		Help: help,
 
 		Args: func(a *grumble.Args) {
-			if listargs != "" {
-				a.StringList(listargs, "args")
-			}
-
 			for _, arg := range args {
 				a.String(arg, "arg")
+			}
+
+			if listargs != "" {
+				a.StringList(listargs, "args")
 			}
 		},
 

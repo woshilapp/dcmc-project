@@ -12,7 +12,7 @@ import (
 	reuse "github.com/libp2p/go-reuseport"
 )
 
-func ListenConn(conn net.Conn) {
+func HandleConn(conn net.Conn) {
 	for {
 		data, err := network.ReadMsg(conn)
 		if err != nil {

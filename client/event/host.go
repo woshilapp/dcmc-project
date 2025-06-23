@@ -36,13 +36,15 @@ func handleNewPeer(conn net.Conn, args ...any) {
 		return
 	}
 
+	go network.HandleConn(tmp_conn)
+
 	peer := &global.TPeers{}
 	peer.PunchID = punch_id
 	peer.Conn = tmp_conn
 
 	global.Host.Peers = append(global.Host.Peers, peer)
 
-	str, _ := protocol.Encode(203, punch_id)
+	str, _ := protocol.Encode(302, punch_id)
 	netdata.WriteMsg(tmp_conn, []byte(str))
 }
 

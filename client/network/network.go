@@ -1,6 +1,7 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -38,15 +39,21 @@ func HandleConn(conn net.Conn) {
 	}
 }
 
-func ConnectPeer(conn net.Conn, peer_addr string, conntun chan net.Conn) {
+func ConnectPeer(conn net.Conn, peer_addr string, conntun chan net.Conn, dietun chan uint8) {
 	for {
-		time.Sleep(500 * time.Millisecond)
-		peerConn, err := reuse.DialTimeout("tcp", conn.LocalAddr().String(), peer_addr, 2*time.Second)
-		if err != nil {
-			fmt.Println("Peer Conn Error:", err)
-		} else {
-			conntun <- peerConn
-			fmt.Println("Peer Connected")
+		select {
+		case <-dietun:
+			return
+		default:
+			time.Sleep(500 * time.Millisecond)
+			peerConn, err := reuse.DialTimeout("tcp", conn.LocalAddr().String(), peer_addr, 2*time.Second)
+			if err != nil {
+				fmt.Println("Peer Conn Error:", err)
+			} else {
+				conntun <- peerConn
+				fmt.Println("Peer Connected")
+				return
+			}
 		}
 	}
 }
@@ -55,6 +62,7 @@ func ListenPeer(listener net.Listener, conn net.Conn, conntun chan net.Conn) { /
 	peerConn, err := listener.Accept()
 	if err != nil {
 		fmt.Println("Accept Error:", err)
+		return
 	}
 
 	conntun <- peerConn
@@ -63,12 +71,14 @@ func ListenPeer(listener net.Listener, conn net.Conn, conntun chan net.Conn) { /
 
 func PunchPeer(conn net.Conn, peer_addr string, isHost bool) (net.Conn, error) {
 	timeout := time.Second * 30
+	timer := time.NewTimer(timeout)
 	conntun := make(chan net.Conn)
+	dietun := make(chan uint8)
 
 	if isHost {
 		listener, _ := reuse.Listen("tcp", conn.LocalAddr().String())
 		go ListenPeer(listener, conn, conntun)
-		go ConnectPeer(conn, peer_addr, conntun)
+		go ConnectPeer(conn, peer_addr, conntun, dietun)
 
 		go func() {
 			time.Sleep(timeout)
@@ -76,7 +86,7 @@ func PunchPeer(conn net.Conn, peer_addr string, isHost bool) (net.Conn, error) {
 			conn.Close()
 		}()
 	} else {
-		go ConnectPeer(conn, peer_addr, conntun)
+		go ConnectPeer(conn, peer_addr, conntun, dietun)
 
 		go func() {
 			time.Sleep(timeout)
@@ -84,7 +94,12 @@ func PunchPeer(conn net.Conn, peer_addr string, isHost bool) (net.Conn, error) {
 		}()
 	}
 
-	peer_conn := <-conntun
+	select {
+	case peer_conn := <-conntun:
+		dietun <- 1
+		return peer_conn, nil
+	case <-timer.C:
+		return nil, errors.New("wait peer timeout")
+	}
 
-	return peer_conn, nil
 }

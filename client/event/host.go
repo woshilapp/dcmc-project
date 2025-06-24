@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	reuse "github.com/libp2p/go-reuseport"
+
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
 	netdata "github.com/woshilapp/dcmc-project/network"
@@ -14,7 +16,7 @@ import (
 func InitHostEvent() {
 	protocol.RegTCPEvent(112, handleCreateRoom, protocol.IntType)
 	protocol.RegTCPEvent(121, handleNewPeer, protocol.IntType)
-	protocol.RegTCPEvent(122, handleNoticePunchHost, protocol.IntType)
+	protocol.RegTCPEvent(122, handleNoticePunchHost, protocol.IntType, protocol.StringType)
 }
 
 func handleCreateRoom(conn net.Conn, args ...any) {
@@ -30,7 +32,7 @@ func handleNewPeer(conn net.Conn, args ...any) {
 
 	punch_id := args[1].(int)
 
-	tmp_conn, err := net.Dial("tcp", global.Serveraddr.String())
+	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
 	if err != nil {
 		fmt.Println("Punch connect server failed")
 		return

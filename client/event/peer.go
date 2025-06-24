@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	reuse "github.com/libp2p/go-reuseport"
+
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
 	netdata "github.com/woshilapp/dcmc-project/network"
@@ -49,7 +51,7 @@ func handlePunchHostID(conn net.Conn, args ...any) {
 
 	global.Peer.Status = 1
 
-	tmp_conn, err := net.Dial("tcp", global.Serveraddr.String())
+	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
 	if err != nil {
 		fmt.Println("Punch connect server failed")
 		return

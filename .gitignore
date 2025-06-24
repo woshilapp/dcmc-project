@@ -25,4 +25,4 @@ go.work.sum
 .env
 
 # o binary output file
-.o
+*.o

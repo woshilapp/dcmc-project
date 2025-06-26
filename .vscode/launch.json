@@ -21,12 +21,22 @@
             "program": "${workspaceFolder}/server/main.go"
         },
         {
-            "name": "Launch Client(debug)",
+            "name": "Launch Peer(debug)",
             "type": "go",
             "request": "launch",
             "mode": "debug",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/client/main.go"
+            "program": "${workspaceFolder}/client/main.go",
+            "args": ["-role", "1"]
+        },
+        {
+            "name": "Launch Host(debug)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/client/main.go",
+            "args": ["-role", "2"]
         },
         // {
         //     "name": "Launch Package",

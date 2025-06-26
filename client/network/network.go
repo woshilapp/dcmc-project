@@ -61,19 +61,20 @@ func ConnectPeer(conn net.Conn, peer_addr string, conntun chan net.Conn, dietun 
 func ListenPeer(listener net.Listener, conn net.Conn, conntun chan net.Conn) { //host only
 	peerConn, err := listener.Accept()
 	if err != nil {
-		fmt.Println("Accept Error:", err)
+		// fmt.Println("Accept Error:", err)
+		//it won't return a conn
 		return
 	}
 
 	conntun <- peerConn
-	fmt.Println("Accepted Peer Connect")
+	// fmt.Println("Accepted Peer Connect")
 }
 
 func PunchPeer(conn net.Conn, peer_addr string, isHost bool) (net.Conn, error) {
 	timeout := time.Second * 30
 	timer := time.NewTimer(timeout)
 	conntun := make(chan net.Conn)
-	dietun := make(chan uint8)
+	dietun := make(chan uint8, 1)
 
 	if isHost {
 		listener, _ := reuse.Listen("tcp", conn.LocalAddr().String())

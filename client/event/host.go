@@ -3,6 +3,7 @@ package event
 import (
 	"fmt"
 	"net"
+	"slices"
 
 	reuse "github.com/libp2p/go-reuseport"
 
@@ -55,11 +56,13 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 	peer_addr := args[2].(string)
 	punch_type := 0         //0:port, 1:room
 	var peer *global.TPeers //for room connection
+	var peer_ind int        //for clean thread
 
-	for _, p := range global.Host.Peers {
+	for i, p := range global.Host.Peers {
 		if punch_id == p.PunchID {
 			punch_type = 1
 			peer = p
+			peer_ind = i
 			break
 		}
 	}
@@ -90,7 +93,7 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 
 					peer.Conn.Close()
 					//遍历TCPConn和UDPSock关闭链接
-					//删除peer, 但是要自己写
+					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind)
 					return
 				}
 

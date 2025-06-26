@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "flag"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -34,15 +34,13 @@ func main() {
 
 	var role int = 0
 
-	role = 2 //debug
+	flag.IntVar(&role, "role", 0, "1:peer, 2:host")
+	flag.Parse()
 
-	// flag.IntVar(&role, "role", 0, "1:peer, 2:host")
-	// flag.Parse()
-
-	// if role == 0 {
-	// 	flag.PrintDefaults()
-	// 	return
-	// }
+	if role == 0 {
+		flag.PrintDefaults()
+		return
+	}
 
 	global.Role = role
 

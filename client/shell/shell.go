@@ -21,6 +21,10 @@ func InitCommand() {
 		[]string{"text"}, "",
 		sendToServer)
 
+	term.AddCommand(global.App, "sendpeer", "send tcp data to peer(s)",
+		[]string{"text"}, "",
+		sendToPeer)
+
 	term.AddCommand(global.App, "sendencode", "send tcp encoded data to server",
 		[]string{}, "data",
 		sendEncodedToServer)
@@ -77,6 +81,32 @@ func sendToServer(context *grumble.Context) error {
 		context.App.Println("[ERRORst]", err)
 
 		return nil
+	}
+
+	return nil
+}
+
+func sendToPeer(context *grumble.Context) error {
+	if global.Role == 1 {
+		err := netdata.WriteMsg(global.Peer.HostConn, []byte(context.Args.String("text")))
+
+		if err != nil {
+			context.App.Println("[ERRORsp]", err)
+
+			return nil
+		}
+
+		return nil
+	} else {
+		for _, p := range global.Host.Peers {
+			err := netdata.WriteMsg(p.Conn, []byte(context.Args.String("text")))
+
+			if err != nil {
+				context.App.Println("[ERRORsp]", err)
+
+				return nil
+			}
+		}
 	}
 
 	return nil

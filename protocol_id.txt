@@ -55,8 +55,8 @@ host: provider of the services
         fmt 211|name (int, string)
     212: request name list:
         fmt 212 (int)
-    220: punch failed:
-        fmt 220|method|protocol|port (int, int, int, int)
+//  220: punch failed: unused
+//      fmt 220|method|protocol|port (int, int, int, int)
     230: msg:
         fmt 230|msg (int, string)
 
@@ -72,7 +72,7 @@ host: provider of the services
     311: delete room:
         fmt 311|room_id (int, int)
     312: update room status:
-        fmt 312|room_id|curr_peer|descrpition (int, int, int, string)
+        fmt 312|room_id|curr_peer|descrpition|need_password (int, int, int, string)
     320: enter room success:
         fmt 320 (int)
     321: room required password:
@@ -86,7 +86,7 @@ host: provider of the services
     325: kicked:
         fmt 325|reason (int, string)
     326: banned:
-        fmt 326|reason|unban_time (int, string, string)
+        fmt 326|reason|unban_time (int, string, int)
     330: punching port:
         fmt 330|punch_id|method|protocol|port (int, int, int, int, int)
     340: msg:
@@ -94,4 +94,4 @@ host: provider of the services
     341: broadcast:
         fmt 341|broadcast_msg (int, string)
     342: muted:
-        fmt 342|reason|unmute_time (int, string)
+        fmt 342|reason|unmute_time (int, string, int)

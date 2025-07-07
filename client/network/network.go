@@ -13,29 +13,47 @@ import (
 	reuse "github.com/libp2p/go-reuseport"
 )
 
+func ProcEvent(data []byte) {
+	event, err := protocol.Decode(string(data))
+	if err != nil {
+		global.App.Println("[ERRORdc]", err)
+		return
+	}
+
+	err = protocol.VaildateTCPEvent(event...)
+	if err != nil {
+		global.App.Println("[BADEvent]", err, event)
+		return
+	}
+
+	protocol.ExecTCPEvent(global.Serverconn, event...)
+}
+
 func HandleConn(conn net.Conn) {
 	for {
 		data, err := network.ReadMsg(conn)
 		if err != nil {
 			global.App.Println("[ERRORrt]", err)
+			global.App.Println("Disconnect from Server")
 			return
 		}
 
 		global.App.Println("[Recv Server TCP]", string(data))
 
-		event, err := protocol.Decode(string(data))
+		ProcEvent(data)
+	}
+}
+
+func HandlePunchConn(conn net.Conn) {
+	for {
+		data, err := network.ReadMsg(conn)
 		if err != nil {
-			global.App.Println("[ERRORdc]", err)
-			continue
+			return
 		}
 
-		err = protocol.VaildateTCPEvent(event...)
-		if err != nil {
-			global.App.Println("[BADEvent]", err, event)
-			continue
-		}
+		global.App.Println("[Recv Server TCP]", string(data))
 
-		protocol.ExecTCPEvent(global.Serverconn, event...)
+		ProcEvent(data)
 	}
 }
 

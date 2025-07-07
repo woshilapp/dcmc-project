@@ -44,6 +44,14 @@ func InitCommand() {
 	term.AddCommand(global.App, "create", "create a room",
 		[]string{"name", "max_peer", "desc"}, "pwd",
 		createRoom)
+
+	term.AddCommand(global.App, "passwd", "set a passwd for room",
+		[]string{"pwd"}, "",
+		setPasswd)
+
+	term.AddCommand(global.App, "clearpwd", "clear the passwd",
+		[]string{}, "",
+		clrPasswd)
 }
 
 func connectToServer(context *grumble.Context) error {
@@ -234,6 +242,36 @@ func createRoom(context *grumble.Context) error {
 		global.CurrRoom.Description,
 		global.CurrRoom.RequiredPwd,
 	)
+
+	netdata.WriteMsg(global.Serverconn, []byte(str))
+
+	return nil
+}
+
+func setPasswd(context *grumble.Context) error {
+	if global.Host.Status == 0 {
+		return nil
+	}
+
+	global.Host.Passwd = context.Args.String("pwd")
+	global.CurrRoom.RequiredPwd = true
+
+	str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, true)
+
+	netdata.WriteMsg(global.Serverconn, []byte(str))
+
+	return nil
+}
+
+func clrPasswd(context *grumble.Context) error {
+	if global.Host.Status == 0 {
+		return nil
+	}
+
+	global.Host.Passwd = ""
+	global.CurrRoom.RequiredPwd = false
+
+	str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, false)
 
 	netdata.WriteMsg(global.Serverconn, []byte(str))
 

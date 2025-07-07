@@ -18,6 +18,11 @@ func InitHostEvent() {
 	protocol.RegTCPEvent(112, handleCreateRoom, protocol.IntType)
 	protocol.RegTCPEvent(121, handleNewPeer, protocol.IntType)
 	protocol.RegTCPEvent(122, handleNoticePunchHost, protocol.IntType, protocol.StringType)
+	protocol.RegTCPEvent(200, handlePeerHello)
+	protocol.RegTCPEvent(210, handlePeerPasswd, protocol.StringType)
+	protocol.RegTCPEvent(211, handlePeerName, protocol.StringType)
+	protocol.RegTCPEvent(212, handlePeerReqList)
+	protocol.RegTCPEvent(230, handlePeerMsg, protocol.StringType)
 }
 
 func handleCreateRoom(conn net.Conn, args ...any) {
@@ -39,7 +44,7 @@ func handleNewPeer(conn net.Conn, args ...any) {
 		return
 	}
 
-	go network.HandleConn(tmp_conn)
+	go network.HandlePunchConn(tmp_conn)
 
 	peer := &global.TPeers{}
 	peer.PunchID = punch_id
@@ -93,12 +98,119 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 
 					peer.Conn.Close()
 					//遍历TCPConn和UDPSock关闭链接
+					for _, c := range peer.TCPConn {
+						c.Close()
+					}
+
+					for _, c := range peer.UDPSock {
+						c.Close()
+					}
+
 					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind)
 					return
 				}
 
 				fmt.Println("From Peer recv:", string(data))
+
+				network.ProcEvent(data)
 			}
 		}()
+	}
+}
+
+func handlePeerHello(conn net.Conn, args ...any) {
+	if global.CurrRoom.RequiredPwd {
+		str, _ := protocol.Encode(321)
+		netdata.WriteMsg(conn, []byte(str))
+		return
+	}
+
+	str, _ := protocol.Encode(320)
+	netdata.WriteMsg(conn, []byte(str))
+}
+
+func handlePeerPasswd(conn net.Conn, args ...any) {
+	if !global.CurrRoom.RequiredPwd {
+		return
+	}
+
+	pwd := args[1].(string)
+
+	if global.Host.Passwd != pwd {
+		str, _ := protocol.Encode(322)
+		netdata.WriteMsg(conn, []byte(str))
+		return
+	}
+
+	var peer *global.TPeers
+	for _, p := range global.Host.Peers {
+		if p.Conn == conn {
+			peer = p
+		}
+	}
+
+	peer.Auth = true
+
+	str, _ := protocol.Encode(320)
+	netdata.WriteMsg(conn, []byte(str))
+}
+
+func handlePeerName(conn net.Conn, args ...any) {
+	var peer *global.TPeers
+
+	for _, p := range global.Host.Peers {
+		if p.Conn == conn {
+			peer = p
+		}
+	}
+
+	if !peer.Auth {
+		return
+	}
+
+	name := args[1].(string)
+	for _, p := range global.Host.Peers {
+		if p.Name == name {
+			str, _ := protocol.Encode(323)
+			netdata.WriteMsg(conn, []byte(str))
+			return
+		}
+	}
+
+	peer.Name = name
+}
+
+func handlePeerReqList(conn net.Conn, args ...any) {
+	data := []any{324}
+	for _, p := range global.Host.Peers {
+		if p.Name != "" {
+			data = append(data, p.Name)
+		}
+	}
+
+	str, _ := protocol.Encode(data...)
+	netdata.WriteMsg(conn, []byte(str))
+}
+
+func handlePeerMsg(conn net.Conn, args ...any) {
+	msg := args[1].(string)
+	var peer *global.TPeers
+
+	for _, p := range global.Host.Peers {
+		if p.Conn == conn {
+			peer = p
+		}
+	}
+
+	if peer.Name == "" {
+		return
+	}
+
+	str, _ := protocol.Encode(340, peer.Name, msg)
+
+	for _, p := range global.Host.Peers {
+		if p.Name != "" {
+			netdata.WriteMsg(p.Conn, []byte(str))
+		}
 	}
 }

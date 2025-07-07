@@ -10,6 +10,7 @@ import (
 func InitEvent() {
 	protocol.RegTCPEvent(101, recvRoomList, protocol.StringAnyType)
 	protocol.RegTCPEvent(102, printRoomList)
+	protocol.RegTCPEvent(113, handleServerBroadcast, protocol.StringType)
 }
 
 func recvRoomList(conn net.Conn, args ...any) {
@@ -49,4 +50,9 @@ func printRoomList(conn net.Conn, args ...any) {
 
 		global.App.Printf("%+v\n", v)
 	}
+}
+
+func handleServerBroadcast(conn net.Conn, args ...any) {
+	msg := args[1].(string)
+	global.App.Println("Server Broadcast:", msg)
 }

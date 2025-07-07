@@ -40,6 +40,7 @@ type TPeers struct {
 	PunchID int
 	TCPConn map[uint16]net.Conn
 	UDPSock map[uint16]*net.UDPConn
+	Auth    bool
 }
 
 var Roomlist []Room = []Room{}

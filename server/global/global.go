@@ -84,12 +84,13 @@ func RemoveRoom(id int) {
 	delete(roomlist, uint32(id))
 }
 
-func UpdateRoom(id int, curr_peer int, description string) {
+func UpdateRoom(id int, curr_peer int, description string, requiredpwd bool) {
 	roomlock.Lock()
 	defer roomlock.Unlock()
 
 	roomlist[uint32(id)].CurrPeer = curr_peer
 	roomlist[uint32(id)].Description = description
+	roomlist[uint32(id)].RequiredPwd = requiredpwd
 }
 
 func AllocPunchSession() int {

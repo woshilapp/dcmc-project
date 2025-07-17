@@ -20,7 +20,7 @@ func init() {
 	proto.RegTCPEvent(301, handlePunchPort)
 	proto.RegTCPEvent(310, handleRegRoom, proto.StringType, proto.IntType, proto.StringType, proto.BoolType)
 	proto.RegTCPEvent(311, handleDeleteRoom, proto.IntType)
-	proto.RegTCPEvent(312, handleUpdateRoom, proto.IntType, proto.IntType, proto.StringType)
+	proto.RegTCPEvent(312, handleUpdateRoom, proto.IntType, proto.IntType, proto.StringType, proto.BoolType)
 
 	//punching
 	proto.RegTCPEvent(203, handleReqPunchClient, proto.IntType)
@@ -185,7 +185,7 @@ func handleDeleteRoom(conn net.Conn, a ...any) {
 	global.RemoveRoom(a[1].(int))
 }
 
-// fmt 312|room_id|curr_peer|descrpition (int, int, int, string)
+// fmt 312|room_id|curr_peer|descrpition|need_password (int, int, int, string, bool)
 func handleUpdateRoom(conn net.Conn, a ...any) {
 	room, err := global.GetRoom(a[1].(int))
 	if err != nil {
@@ -200,7 +200,7 @@ func handleUpdateRoom(conn net.Conn, a ...any) {
 		return
 	}
 
-	global.UpdateRoom(a[1].(int), a[2].(int), a[3].(string))
+	global.UpdateRoom(a[1].(int), a[2].(int), a[3].(string), a[4].(bool))
 }
 
 // fmt 203|punch_id (int, int)

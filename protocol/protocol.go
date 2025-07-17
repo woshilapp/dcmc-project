@@ -108,9 +108,9 @@ func VaildateUDPEvent(a ...any) error {
 		return errors.New("unregistered event")
 	}
 
-	if len(a) != event.len {
+	if len(a) != event.len && event.len != 1 {
 		for i, v := range event.types {
-			if v != "stringany" && i == event.len-1 {
+			if v != "stringany" && i == event.len-2 {
 				return errors.New("len mismatch")
 			}
 		}

@@ -52,6 +52,18 @@ func InitCommand() {
 	term.AddCommand(global.App, "clearpwd", "clear the passwd",
 		[]string{}, "",
 		clrPasswd)
+
+	term.AddCommand(global.App, "name", "set the name",
+		[]string{"name"}, "",
+		setName)
+
+	term.AddCommand(global.App, "namelist", "list names on host",
+		[]string{}, "",
+		reqNamelist)
+
+	term.AddCommand(global.App, "msg", "send msg",
+		[]string{"msg"}, "",
+		sendMsg)
 }
 
 func connectToServer(context *grumble.Context) error {
@@ -249,16 +261,23 @@ func createRoom(context *grumble.Context) error {
 }
 
 func setPasswd(context *grumble.Context) error {
-	if global.Host.Status == 0 {
-		return nil
+	switch global.Role {
+	case 1:
+		pwd := context.Args.String("pwd")
+		str, _ := protocol.Encode(210, pwd)
+		netdata.WriteMsg(global.Peer.HostConn, []byte(str))
+	case 2:
+		if global.Host.Status == 0 {
+			return nil
+		}
+
+		global.Host.Passwd = context.Args.String("pwd")
+		global.CurrRoom.RequiredPwd = true
+
+		str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, true)
+
+		netdata.WriteMsg(global.Serverconn, []byte(str))
 	}
-
-	global.Host.Passwd = context.Args.String("pwd")
-	global.CurrRoom.RequiredPwd = true
-
-	str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, true)
-
-	netdata.WriteMsg(global.Serverconn, []byte(str))
 
 	return nil
 }
@@ -274,6 +293,65 @@ func clrPasswd(context *grumble.Context) error {
 	str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, false)
 
 	netdata.WriteMsg(global.Serverconn, []byte(str))
+
+	return nil
+}
+
+func setName(context *grumble.Context) error {
+	if global.Role != 1 {
+		return nil
+	}
+
+	name := context.Args.String("name")
+
+	str, _ := protocol.Encode(211, name)
+	netdata.WriteMsg(global.Peer.HostConn, []byte(str))
+
+	return nil
+}
+
+func reqNamelist(context *grumble.Context) error {
+	switch global.Role {
+	case 1:
+		str, _ := protocol.Encode(212)
+		netdata.WriteMsg(global.Peer.HostConn, []byte(str))
+	case 2:
+		str := ""
+		for _, p := range global.Host.Peers {
+			if p.Name == "" {
+				continue
+			}
+
+			if str == "" {
+				str = str + p.Name
+				continue
+			}
+
+			str = str + p.Name + ","
+		}
+
+		global.App.Println("Players:", str)
+	}
+
+	return nil
+}
+
+func sendMsg(context *grumble.Context) error {
+	msg := context.Args.String("msg")
+
+	switch global.Role {
+	case 1:
+		str, _ := protocol.Encode(230, msg)
+		netdata.WriteMsg(global.Peer.HostConn, []byte(str))
+	case 2:
+		str := "<Host>" + msg
+
+		for _, p := range global.Host.Peers {
+			if p.Name != "" {
+				netdata.WriteMsg(p.Conn, []byte(str))
+			}
+		}
+	}
 
 	return nil
 }

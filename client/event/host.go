@@ -95,9 +95,8 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 				if err != nil {
 					fmt.Println("Disconnect from a peer")
 					//clean up
-
 					peer.Conn.Close()
-					//遍历TCPConn和UDPSock关闭链接
+
 					for _, c := range peer.TCPConn {
 						c.Close()
 					}
@@ -107,12 +106,24 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 					}
 
 					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind)
+
+					if peer.Auth {
+						global.CurrRoom.CurrPeer--
+
+						str, _ := protocol.Encode(312, global.CurrRoom.Id,
+							global.CurrRoom.CurrPeer,
+							global.CurrRoom.Description,
+							global.CurrRoom.RequiredPwd,
+						)
+						netdata.WriteMsg(global.Serverconn, []byte(str))
+					}
+
 					return
 				}
 
 				fmt.Println("From Peer recv:", string(data))
 
-				network.ProcEvent(data)
+				network.ProcEvent(peer_conn, data)
 			}
 		}()
 	}
@@ -125,8 +136,26 @@ func handlePeerHello(conn net.Conn, args ...any) {
 		return
 	}
 
+	var peer *global.TPeers
+	for _, p := range global.Host.Peers {
+		if p.Conn == conn {
+			peer = p
+		}
+	}
+
+	peer.Auth = true
+
 	str, _ := protocol.Encode(320)
 	netdata.WriteMsg(conn, []byte(str))
+
+	//update status
+	global.CurrRoom.CurrPeer++
+	str1, _ := protocol.Encode(312, global.CurrRoom.Id,
+		global.CurrRoom.CurrPeer,
+		global.CurrRoom.Description,
+		global.CurrRoom.RequiredPwd,
+	)
+	netdata.WriteMsg(global.Serverconn, []byte(str1))
 }
 
 func handlePeerPasswd(conn net.Conn, args ...any) {
@@ -153,6 +182,15 @@ func handlePeerPasswd(conn net.Conn, args ...any) {
 
 	str, _ := protocol.Encode(320)
 	netdata.WriteMsg(conn, []byte(str))
+
+	//update status
+	global.CurrRoom.CurrPeer++
+	str1, _ := protocol.Encode(312, global.CurrRoom.Id,
+		global.CurrRoom.CurrPeer,
+		global.CurrRoom.Description,
+		global.CurrRoom.RequiredPwd,
+	)
+	netdata.WriteMsg(global.Serverconn, []byte(str1))
 }
 
 func handlePeerName(conn net.Conn, args ...any) {
@@ -164,13 +202,13 @@ func handlePeerName(conn net.Conn, args ...any) {
 		}
 	}
 
-	if !peer.Auth {
+	if !peer.Auth || peer.Name != "" {
 		return
 	}
 
 	name := args[1].(string)
 	for _, p := range global.Host.Peers {
-		if p.Name == name {
+		if p.Name == name || name == "Host" {
 			str, _ := protocol.Encode(323)
 			netdata.WriteMsg(conn, []byte(str))
 			return
@@ -213,4 +251,6 @@ func handlePeerMsg(conn net.Conn, args ...any) {
 			netdata.WriteMsg(p.Conn, []byte(str))
 		}
 	}
+
+	global.App.Println("<" + peer.Name + ">" + msg)
 }

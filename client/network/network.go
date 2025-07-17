@@ -13,7 +13,7 @@ import (
 	reuse "github.com/libp2p/go-reuseport"
 )
 
-func ProcEvent(data []byte) {
+func ProcEvent(conn net.Conn, data []byte) {
 	event, err := protocol.Decode(string(data))
 	if err != nil {
 		global.App.Println("[ERRORdc]", err)
@@ -26,7 +26,7 @@ func ProcEvent(data []byte) {
 		return
 	}
 
-	protocol.ExecTCPEvent(global.Serverconn, event...)
+	protocol.ExecTCPEvent(conn, event...)
 }
 
 func HandleConn(conn net.Conn) {
@@ -40,7 +40,7 @@ func HandleConn(conn net.Conn) {
 
 		global.App.Println("[Recv Server TCP]", string(data))
 
-		ProcEvent(data)
+		ProcEvent(conn, data)
 	}
 }
 
@@ -53,7 +53,7 @@ func HandlePunchConn(conn net.Conn) {
 
 		global.App.Println("[Recv Server TCP]", string(data))
 
-		ProcEvent(data)
+		ProcEvent(conn, data)
 	}
 }
 

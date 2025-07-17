@@ -1,10 +1,8 @@
 package event
 
 import (
-	"bufio"
 	"fmt"
 	"net"
-	"os"
 	"time"
 
 	reuse "github.com/libp2p/go-reuseport"
@@ -111,7 +109,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 
 				fmt.Println("From Host recv:", string(data))
 
-				network.ProcEvent(data)
+				network.ProcEvent(host_conn, data)
 			}
 		}()
 
@@ -121,25 +119,17 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 }
 
 func handleReqPwd(conn net.Conn, args ...any) {
-	input := bufio.NewReader(os.Stdin)
+	global.App.Println("Enter Password by command 'passwd'")
 
-	global.App.Print("Enter Password:") //prompt
-	data, _, _ := input.ReadLine()
-	pwd := string(data)
-
-	str, _ := protocol.Encode(210, pwd)
-	netdata.WriteMsg(conn, []byte(str))
+	// str, _ := protocol.Encode(210, pwd)
+	// netdata.WriteMsg(conn, []byte(str))
 }
 
 func handleEnterRoomSuc(conn net.Conn, args ...any) {
-	input := bufio.NewReader(os.Stdin)
+	global.App.Println("Auth Success, Enter Name by command 'name'")
 
-	global.App.Print("Auth Success, Enter Name:") //prompt
-	data, _, _ := input.ReadLine()
-	name := string(data)
-
-	str, _ := protocol.Encode(211, name)
-	netdata.WriteMsg(conn, []byte(str))
+	// str, _ := protocol.Encode(211, name)
+	// netdata.WriteMsg(conn, []byte(str))
 }
 
 func handlePwdError(conn net.Conn, args ...any) {
@@ -172,6 +162,7 @@ func handleNameList(conn net.Conn, args ...any) {
 
 		if i == 1 {
 			names = names + args[i].(string)
+			continue
 		}
 
 		names = names + "," + args[i].(string)

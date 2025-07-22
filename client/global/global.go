@@ -2,6 +2,7 @@ package global
 
 import (
 	"net"
+	"sync"
 
 	"github.com/desertbit/grumble"
 )
@@ -15,12 +16,24 @@ type Room struct {
 	RequiredPwd bool
 }
 
+type Tunnel struct {
+	Proto     int //1:tcp, 2:udp
+	Port      uint16
+	PunchID   int
+	ID        uint32
+	TCPConns  map[uint32]net.Conn //id:conn
+	UDPConns  map[uint32]*net.UDPConn
+	Lock      sync.RWMutex
+	Closed    bool //true = closed
+	TCPRemote net.Conn
+	UDPRemote *net.UDPConn
+}
+
 type TPeer struct {
 	Name     string
 	HostConn net.Conn
 	Status   uint8 //0: none, 1: connecting, 2: connected
-	TCPConn  map[uint16]net.Conn
-	UDPSock  map[uint16]*net.UDPConn
+	Tunnels  []*Tunnel
 }
 
 type THost struct {
@@ -29,6 +42,8 @@ type THost struct {
 	Peers    []*TPeers
 	TCPPorts []uint16
 	UDPPorts []uint16
+	PunchIDs chan int
+	PIDtun   map[int]*Tunnel
 	Muted    map[string]int64 //name: unixstamp
 	Banned   map[string]int64 //name: unixstamp
 	IPBan    map[string]int64 //IP: unixstamp
@@ -38,8 +53,7 @@ type TPeers struct {
 	Conn    net.Conn
 	Name    string
 	PunchID int
-	TCPConn map[uint16]net.Conn
-	UDPSock map[uint16]*net.UDPConn
+	Tunnels []*Tunnel
 	Auth    bool
 }
 
@@ -60,6 +74,8 @@ var Host THost = THost{
 	Peers:    []*TPeers{},
 	TCPPorts: []uint16{},
 	UDPPorts: []uint16{},
+	PunchIDs: make(chan int, 10),
+	PIDtun:   map[int]*Tunnel{},
 	Muted:    map[string]int64{},
 	Banned:   map[string]int64{},
 	IPBan:    map[string]int64{},
@@ -68,6 +84,5 @@ var Host THost = THost{
 var Peer TPeer = TPeer{
 	Name:    "",
 	Status:  0,
-	TCPConn: map[uint16]net.Conn{},
-	UDPSock: map[uint16]*net.UDPConn{},
+	Tunnels: []*Tunnel{},
 }

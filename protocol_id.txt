@@ -88,7 +88,10 @@ host: provider of the services
     326: banned:
         fmt 326|reason|unban_time (int, string, int)
     330: punching port:
-        fmt 330|punch_id|method|protocol|port (int, int, int, int, int)
+//      fmt 330|punch_id|method|protocol|port (int, int, int, int, int)
+        fmt 330|punch_id|protocol|port (int, int, int, int) //protocol:1=tcp, 2=udp
+    331: close port:
+        fmt 331|protocol|port (int, int, int)
     340: msg:
         fmt 340|name|msg (int, string, string)
     341: broadcast:

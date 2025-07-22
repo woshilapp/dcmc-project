@@ -3,12 +3,15 @@ package event
 import (
 	"fmt"
 	"net"
+	"slices"
+	"strconv"
 	"time"
 
 	reuse "github.com/libp2p/go-reuseport"
 
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
+	"github.com/woshilapp/dcmc-project/client/tunnel"
 	netdata "github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	"github.com/woshilapp/dcmc-project/terminal"
@@ -26,6 +29,8 @@ func InitPeerEvent() {
 	protocol.RegTCPEvent(324, handleNameList, protocol.StringAnyType)
 	protocol.RegTCPEvent(325, handleKicked, protocol.StringType)
 	protocol.RegTCPEvent(326, handleBanned, protocol.StringType, protocol.IntType)
+	protocol.RegTCPEvent(330, handlePunchPort, protocol.IntType, protocol.IntType, protocol.IntType)
+	protocol.RegTCPEvent(331, handleClosePort, protocol.IntType, protocol.IntType)
 	protocol.RegTCPEvent(340, handleMsg, protocol.StringType, protocol.StringType)
 	protocol.RegTCPEvent(341, handleHostBroadcast, protocol.StringType)
 	protocol.RegTCPEvent(342, handleMuted, protocol.StringType, protocol.IntType)
@@ -79,6 +84,7 @@ func handlePunchHostID(conn net.Conn, args ...any) {
 func handleNoticePunchPeer(conn net.Conn, args ...any) {
 	switch global.Peer.Status {
 	case 1:
+		// room
 		// punch_id := args[1].(int)
 		host_addr := args[2].(string)
 
@@ -94,7 +100,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 			return
 		}
 
-		global.Peer.Status = 2
+		// global.Peer.Status = 2
 		global.Peer.HostConn = host_conn
 		//handle host conn
 		go func() {
@@ -114,7 +120,35 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 		}()
 
 	case 2:
-		//port
+		// port
+		punch_id := args[1].(int)
+		host_addr := args[2].(string)
+
+		var tun *global.Tunnel
+		for _, t := range global.Peer.Tunnels {
+			if t.PunchID == punch_id {
+				tun = t
+			}
+		}
+		if tun == nil {
+			return
+		}
+
+		switch tun.Proto {
+		case 1:
+			host_conn, err := network.PunchPeer(tun.TCPRemote, host_addr, false)
+			if err != nil {
+				fmt.Println("Punch tcp/" + strconv.Itoa(int(tun.Port)) + " failed")
+				return
+			}
+			tun.TCPRemote = host_conn
+
+			//handle host tunnel
+			go tunnel.HandleRemotePeer(tun, host_conn)
+			go tunnel.ListenLocal(tun)
+		case 2:
+
+		}
 	}
 }
 
@@ -127,7 +161,7 @@ func handleReqPwd(conn net.Conn, args ...any) {
 
 func handleEnterRoomSuc(conn net.Conn, args ...any) {
 	global.App.Println("Auth Success, Enter Name by command 'name'")
-
+	global.Peer.Status = 2
 	// str, _ := protocol.Encode(211, name)
 	// netdata.WriteMsg(conn, []byte(str))
 }
@@ -188,4 +222,70 @@ func handleMuted(conn net.Conn, args ...any) {
 	time := time.Unix(int64(args[2].(int)), 0)
 	global.App.Println("You have been muted, Reason:", reason)
 	global.App.Println("Unmute time:", time)
+}
+
+func handlePunchPort(conn net.Conn, args ...any) {
+	punch_id := args[1].(int)
+	proto := args[2].(int)
+	port := args[3].(int)
+	strport := strconv.Itoa(port)
+
+	switch proto {
+	case 1:
+		global.App.Println("Punch remote port tcp/" + strport + " at local 127.0.0.2:" + strport)
+
+		p := &global.Tunnel{
+			Port:    uint16(port),
+			Proto:   proto,
+			PunchID: punch_id,
+		}
+		global.Peer.Tunnels = append(global.Peer.Tunnels, p)
+
+		tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
+		if err != nil {
+			fmt.Println("Punch connect server failed")
+			return
+		}
+
+		p.TCPRemote = tmp_conn
+
+		go network.HandlePunchConn(tmp_conn)
+
+		str, _ := protocol.Encode(203, punch_id)
+		netdata.WriteMsg(tmp_conn, []byte(str))
+	case 2:
+		//udp
+	}
+}
+
+func handleClosePort(conn net.Conn, args ...any) {
+	proto := args[2].(int)
+	port := args[3].(int)
+	strport := strconv.Itoa(port)
+	var tun *global.Tunnel
+	var tunidx int
+
+	for i, t := range global.Peer.Tunnels {
+		if t.Port == uint16(port) && t.Proto == proto {
+			tun = t
+			tunidx = i
+		}
+	}
+	if tun == nil {
+		return
+	}
+
+	switch proto {
+	case 1:
+		global.App.Println("Host Closed Port tcp/" + strport)
+
+		tun.TCPRemote.Close()
+		for _, c := range tun.TCPConns {
+			c.Close()
+		}
+
+		global.Peer.Tunnels = slices.Delete(global.Peer.Tunnels, tunidx, tunidx)
+	case 2:
+		//udp
+	}
 }

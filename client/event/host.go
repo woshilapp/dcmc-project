@@ -9,6 +9,7 @@ import (
 
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
+	"github.com/woshilapp/dcmc-project/client/tunnel"
 	netdata "github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	"github.com/woshilapp/dcmc-project/terminal"
@@ -16,6 +17,7 @@ import (
 
 func InitHostEvent() {
 	protocol.RegTCPEvent(112, handleCreateRoom, protocol.IntType)
+	protocol.RegTCPEvent(120, handleNewPunchID, protocol.IntType)
 	protocol.RegTCPEvent(121, handleNewPeer, protocol.IntType)
 	protocol.RegTCPEvent(122, handleNoticePunchHost, protocol.IntType, protocol.StringType)
 	protocol.RegTCPEvent(200, handlePeerHello)
@@ -74,7 +76,19 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 
 	switch punch_type {
 	case 0:
-		//port
+		tun := global.Host.PIDtun[punch_id]
+		peer_conn, err := network.PunchPeer(tun.TCPRemote,
+			peer_addr,
+			true)
+		if err != nil {
+			fmt.Println("Connect to a peer failedp")
+			return
+		}
+
+		tun.TCPRemote = peer_conn
+		delete(global.Host.PIDtun, punch_id)
+
+		go tunnel.HandleRemoteHost(tun, peer_conn)
 	case 1:
 		peer_conn, err := network.PunchPeer(peer.Conn,
 			peer_addr,
@@ -97,12 +111,15 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 					//clean up
 					peer.Conn.Close()
 
-					for _, c := range peer.TCPConn {
-						c.Close()
-					}
-
-					for _, c := range peer.UDPSock {
-						c.Close()
+					for _, t := range global.Host.Peers[peer_ind].Tunnels {
+						t.TCPRemote.Close()
+						t.UDPRemote.Close()
+						for _, c := range t.TCPConns {
+							c.Close()
+						}
+						for _, c := range t.UDPConns {
+							c.Close()
+						}
 					}
 
 					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind)
@@ -156,6 +173,8 @@ func handlePeerHello(conn net.Conn, args ...any) {
 		global.CurrRoom.RequiredPwd,
 	)
 	netdata.WriteMsg(global.Serverconn, []byte(str1))
+
+	tunnel.HandleNewPeer(peer)
 }
 
 func handlePeerPasswd(conn net.Conn, args ...any) {
@@ -191,6 +210,8 @@ func handlePeerPasswd(conn net.Conn, args ...any) {
 		global.CurrRoom.RequiredPwd,
 	)
 	netdata.WriteMsg(global.Serverconn, []byte(str1))
+
+	tunnel.HandleNewPeer(peer)
 }
 
 func handlePeerName(conn net.Conn, args ...any) {
@@ -253,4 +274,10 @@ func handlePeerMsg(conn net.Conn, args ...any) {
 	}
 
 	global.App.Println("<" + peer.Name + ">" + msg)
+}
+
+func handleNewPunchID(conn net.Conn, args ...any) {
+	punch_id := args[1].(int)
+
+	global.Host.PunchIDs <- punch_id
 }

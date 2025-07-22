@@ -2,11 +2,13 @@ package shell
 
 import (
 	"net"
+	"slices"
 	"strconv"
 
 	"github.com/desertbit/grumble"
 	"github.com/woshilapp/dcmc-project/client/global"
 	"github.com/woshilapp/dcmc-project/client/network"
+	"github.com/woshilapp/dcmc-project/client/tunnel"
 	netdata "github.com/woshilapp/dcmc-project/network"
 	"github.com/woshilapp/dcmc-project/protocol"
 	term "github.com/woshilapp/dcmc-project/terminal"
@@ -64,6 +66,14 @@ func InitCommand() {
 	term.AddCommand(global.App, "msg", "send msg",
 		[]string{"msg"}, "",
 		sendMsg)
+
+	term.AddCommand(global.App, "punchport", "punch a new port(tcp/udp)",
+		[]string{"proto", "port"}, "",
+		punchPort)
+
+	term.AddCommand(global.App, "delport", "delete the port(tcp/udp)",
+		[]string{"proto", "port"}, "",
+		delPort)
 }
 
 func connectToServer(context *grumble.Context) error {
@@ -351,6 +361,76 @@ func sendMsg(context *grumble.Context) error {
 				netdata.WriteMsg(p.Conn, []byte(str))
 			}
 		}
+	}
+
+	return nil
+}
+
+func punchPort(context *grumble.Context) error {
+	proto := context.Args.String("proto")
+	port, err := strconv.Atoi(context.Args.String("port"))
+	if err != nil || port < 1 || port > 65535 {
+		global.App.Println("Illege port")
+		return nil
+	}
+
+	switch proto {
+	case "tcp":
+		global.Host.TCPPorts = append(global.Host.TCPPorts, uint16(port))
+
+		for _, peer := range global.Host.Peers {
+			tunnel.TCPPunchHost(peer, uint16(port))
+		}
+	case "udp":
+	default:
+		global.App.Println("Illege protocol")
+	}
+
+	return nil
+}
+
+func delPort(context *grumble.Context) error {
+	exist := false
+
+	proto := context.Args.String("proto")
+	port, err := strconv.Atoi(context.Args.String("port"))
+	if err != nil || port < 1 || port > 65535 {
+		global.App.Println("Illege port")
+		return nil
+	}
+
+	switch proto {
+	case "tcp":
+		for i, v := range global.Host.TCPPorts {
+			if v == uint16(port) {
+				global.Host.TCPPorts = slices.Delete(global.Host.TCPPorts, i, i)
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			return nil
+		}
+
+		for _, peer := range global.Host.Peers {
+			str, _ := protocol.Encode(331, 1, port)
+			netdata.WriteMsg(peer.Conn, []byte(str))
+
+			for _, tun := range peer.Tunnels {
+				if tun.Port == uint16(port) && tun.Proto == 1 {
+					tun.Closed = true
+					tun.TCPRemote.Close()
+
+					for _, c := range tun.TCPConns {
+						c.Close()
+					}
+				}
+			}
+		}
+	case "udp":
+	default:
+		global.App.Println("Illege protocol")
 	}
 
 	return nil

@@ -7,11 +7,14 @@ import (
 	"net"
 )
 
-const MaxMsgLength = 1024 * 10 //10KB
+const MaxMsgLength = 1024 * 100 //100KB
 
 func WriteMsg(conn net.Conn, data []byte) error {
-	header := make([]byte, 4)
-	binary.BigEndian.PutUint32(header, uint32(len(data)))
+	header := []byte{0xdc, 0x3c} //DC3C(HEX), 56380(DEC), 2bytes
+
+	lendata := make([]byte, 4)
+	binary.BigEndian.PutUint32(lendata, uint32(len(data)))
+	header = append(header, lendata...)
 
 	fullMsg := append(header, data...)
 
@@ -20,12 +23,17 @@ func WriteMsg(conn net.Conn, data []byte) error {
 }
 
 func ReadMsg(conn net.Conn) ([]byte, error) {
-	header := make([]byte, 4)
+	header := make([]byte, 6)
 	if _, err := io.ReadFull(conn, header); err != nil {
 		return nil, err
 	}
 
-	length := binary.BigEndian.Uint32(header)
+	proto := binary.BigEndian.Uint16(header[:2])
+	if proto != 56380 {
+		return nil, errors.New("not dcmc protocol")
+	}
+
+	length := binary.BigEndian.Uint32(header[2:])
 	if length > MaxMsgLength {
 		println(length)
 		return nil, errors.New("message too long")
@@ -37,4 +45,29 @@ func ReadMsg(conn net.Conn) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func TunnelTCPWrite(id uint32, conn net.Conn, data []byte) error {
+	body := make([]byte, 4)
+	binary.BigEndian.PutUint32(body, id)
+
+	body = append(body, data...)
+
+	err := WriteMsg(conn, body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TunnelTCPRead(conn net.Conn) (uint32, []byte, error) {
+	data, err := ReadMsg(conn)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	id := binary.BigEndian.Uint32(data)
+
+	return id, data[4:], nil
 }

@@ -16,20 +16,30 @@ func HandleRemotePeer(t *global.Tunnel, conn net.Conn) {
 			return
 		}
 
-		id, data, err := netdata.TunnelTCPRead(conn)
+		id, status, data, err := netdata.TunnelTCPRead(conn)
 		if err != nil {
 			fmt.Println("RemoteERR")
+			return
 		}
+		// fmt.Println("PRR:", string(data))
 
 		peerconn := TGetConnP(t, id)
 		if peerconn == nil {
 			continue
 		}
 
-		_, err = peerconn.Write(data)
-		if err != nil {
-			fmt.Println("err1111")
+		switch status {
+		case 1:
+			_, err = peerconn.Write(data)
+			if err != nil {
+				fmt.Println("err1111", err)
+				TDelConnP(t, id)
+
+				netdata.TunnelTCPWrite(id, 0, t.TCPRemote, []byte{})
+			}
+		case 0:
 			TDelConnP(t, id)
+			peerconn.Close()
 		}
 	}
 }
@@ -40,19 +50,22 @@ func HandleLocalPeer(t *global.Tunnel, conn net.Conn, id uint32) {
 			return
 		}
 
-		data := []byte{}
-		buf := make([]byte, 1024)
+		buf := make([]byte, 16*1024)
 
 		_, err := conn.Read(buf)
 		if err != nil {
-			fmt.Println("err222")
+			fmt.Println("err222", err)
+
 			TDelConnP(t, id)
+			netdata.TunnelTCPWrite(id, 0, t.TCPRemote, []byte{})
+
 			return
 		}
+		// fmt.Println("PRL:", string(buf))
 
-		err = netdata.TunnelTCPWrite(id, t.TCPRemote, data)
+		err = netdata.TunnelTCPWrite(id, 1, t.TCPRemote, buf)
 		if err != nil {
-			fmt.Println("errwrt")
+			fmt.Println("errwrt", err)
 			return
 		}
 	}

@@ -112,8 +112,13 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 					peer.Conn.Close()
 
 					for _, t := range global.Host.Peers[peer_ind].Tunnels {
-						t.TCPRemote.Close()
-						t.UDPRemote.Close()
+						switch t.Proto {
+						case 1:
+							t.TCPRemote.Close()
+						case 2:
+							t.UDPRemote.Close()
+						}
+
 						for _, c := range t.TCPConns {
 							c.Close()
 						}
@@ -122,7 +127,7 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 						}
 					}
 
-					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind)
+					global.Host.Peers = slices.Delete(global.Host.Peers, peer_ind, peer_ind+1)
 
 					if peer.Auth {
 						global.CurrRoom.CurrPeer--

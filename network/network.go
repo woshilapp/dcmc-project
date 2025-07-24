@@ -47,9 +47,13 @@ func ReadMsg(conn net.Conn) ([]byte, error) {
 	return body, nil
 }
 
-func TunnelTCPWrite(id uint32, conn net.Conn, data []byte) error {
+func TunnelTCPWrite(id uint32, status uint16, conn net.Conn, data []byte) error {
 	body := make([]byte, 4)
 	binary.BigEndian.PutUint32(body, id)
+
+	statbin := make([]byte, 2)
+	binary.BigEndian.PutUint16(statbin, status)
+	body = append(body, statbin...)
 
 	body = append(body, data...)
 
@@ -61,13 +65,14 @@ func TunnelTCPWrite(id uint32, conn net.Conn, data []byte) error {
 	return nil
 }
 
-func TunnelTCPRead(conn net.Conn) (uint32, []byte, error) {
+func TunnelTCPRead(conn net.Conn) (uint32, uint16, []byte, error) {
 	data, err := ReadMsg(conn)
 	if err != nil {
-		return 0, nil, err
+		return 0, 0, nil, err
 	}
 
 	id := binary.BigEndian.Uint32(data)
+	status := binary.BigEndian.Uint16(data[4:6])
 
-	return id, data[4:], nil
+	return id, status, data[6:], nil
 }

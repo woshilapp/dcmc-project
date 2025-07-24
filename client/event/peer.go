@@ -5,6 +5,7 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	reuse "github.com/libp2p/go-reuseport"
@@ -235,9 +236,12 @@ func handlePunchPort(conn net.Conn, args ...any) {
 		global.App.Println("Punch remote port tcp/" + strport + " at local 127.0.0.2:" + strport)
 
 		p := &global.Tunnel{
-			Port:    uint16(port),
-			Proto:   proto,
-			PunchID: punch_id,
+			Port:     uint16(port),
+			Proto:    proto,
+			PunchID:  punch_id,
+			Lock:     sync.RWMutex{},
+			Closed:   false,
+			TCPConns: map[uint32]net.Conn{},
 		}
 		global.Peer.Tunnels = append(global.Peer.Tunnels, p)
 
@@ -284,7 +288,7 @@ func handleClosePort(conn net.Conn, args ...any) {
 			c.Close()
 		}
 
-		global.Peer.Tunnels = slices.Delete(global.Peer.Tunnels, tunidx, tunidx)
+		global.Peer.Tunnels = slices.Delete(global.Peer.Tunnels, tunidx, tunidx+1)
 	case 2:
 		//udp
 	}

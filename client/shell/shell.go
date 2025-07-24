@@ -100,6 +100,9 @@ func connectToServer(context *grumble.Context) error {
 	str, _ := protocol.Encode(helloInt) //send hello to server
 	netdata.WriteMsg(conn, []byte(str))
 
+	str1, _ := protocol.Encode(202)
+	netdata.WriteMsg(conn, []byte(str1)) //req roomlist
+
 	return nil
 }
 
@@ -333,11 +336,11 @@ func reqNamelist(context *grumble.Context) error {
 			}
 
 			if str == "" {
-				str = str + p.Name
+				str = p.Name
 				continue
 			}
 
-			str = str + p.Name + ","
+			str = str + "," + p.Name
 		}
 
 		global.App.Println("Players:", str)
@@ -379,6 +382,10 @@ func punchPort(context *grumble.Context) error {
 		global.Host.TCPPorts = append(global.Host.TCPPorts, uint16(port))
 
 		for _, peer := range global.Host.Peers {
+			if !peer.Auth {
+				continue
+			}
+
 			tunnel.TCPPunchHost(peer, uint16(port))
 		}
 	case "udp":
@@ -403,7 +410,7 @@ func delPort(context *grumble.Context) error {
 	case "tcp":
 		for i, v := range global.Host.TCPPorts {
 			if v == uint16(port) {
-				global.Host.TCPPorts = slices.Delete(global.Host.TCPPorts, i, i)
+				global.Host.TCPPorts = slices.Delete(global.Host.TCPPorts, i, i+1)
 				exist = true
 				break
 			}

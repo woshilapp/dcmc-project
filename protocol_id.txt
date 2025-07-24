@@ -1,12 +1,29 @@
 --- format
 the packet format following this rules:
 
-required: len and code segment
+required: id, len and code segment
 optional: any
 
 structure:
-    4bytes(len)+code|any1|any2...
+    2bytes(id)|4bytes(len)|code|any1|any2...
     (bytes, int, any, any...)
+
+id must be two bytes: 0xDC, 0x3C
+
+--- tunnel format
+the format is the uplayer, it's same
+in addition, the packet format following this rules:
+
+required: id, len and status segment
+optional: data
+
+structure:
+    2bytes(id)|4bytes(len)|4bytes(id)|2bytes(status)|data
+    (bytes, int, int, int, bytes)
+
+explains:
+    id: the remote connections id
+    status: 1 is normal data, 0 is EOF
 
 --- descrpition
 client: include peer and host

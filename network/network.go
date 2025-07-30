@@ -76,3 +76,38 @@ func TunnelTCPRead(conn net.Conn) (uint32, uint16, []byte, error) {
 
 	return id, status, data[6:], nil
 }
+
+func TunnelUDPWrite(id uint32, conn *net.UDPConn, dest net.Addr, data []byte) error {
+	dataf := []byte{0xdc, 0x3c}
+
+	body := make([]byte, 4)
+	binary.BigEndian.PutUint32(body, id)
+	dataf = append(dataf, body...)
+
+	dataf = append(dataf, data...)
+
+	_, err := conn.WriteTo(dataf, dest)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TunnelUDPRead(conn *net.UDPConn) (uint32, net.Addr, []byte, error) {
+	data := make([]byte, 16*1024)
+	n, addr, err := conn.ReadFrom(data)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+
+	header := data[:2]
+	proto := binary.BigEndian.Uint16(header[:2])
+	if proto != 56380 {
+		return 0, nil, nil, errors.New("not dcmc protocol")
+	}
+
+	id := binary.BigEndian.Uint32(data[2:6])
+
+	return id, addr, data[6:n], nil
+}

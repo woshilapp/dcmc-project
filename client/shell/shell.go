@@ -389,6 +389,15 @@ func punchPort(context *grumble.Context) error {
 			tunnel.TCPPunchHost(peer, uint16(port))
 		}
 	case "udp":
+		global.Host.UDPPorts = append(global.Host.UDPPorts, uint16(port))
+
+		for _, peer := range global.Host.Peers {
+			if !peer.Auth {
+				continue
+			}
+
+			tunnel.UDPPunchHost(peer, uint16(port))
+		}
 	default:
 		global.App.Println("Illege protocol")
 	}
@@ -424,7 +433,7 @@ func delPort(context *grumble.Context) error {
 			str, _ := protocol.Encode(331, 1, port)
 			netdata.WriteMsg(peer.Conn, []byte(str))
 
-			for _, tun := range peer.Tunnels {
+			for idx, tun := range peer.Tunnels {
 				if tun.Port == uint16(port) && tun.Proto == 1 {
 					tun.Closed = true
 					tun.TCPRemote.Close()
@@ -432,10 +441,37 @@ func delPort(context *grumble.Context) error {
 					for _, c := range tun.TCPConns {
 						c.Close()
 					}
+
+					peer.Tunnels = slices.Delete(peer.Tunnels, idx, idx+1)
 				}
 			}
 		}
 	case "udp":
+		for i, v := range global.Host.UDPPorts {
+			if v == uint16(port) {
+				global.Host.UDPPorts = slices.Delete(global.Host.UDPPorts, i, i+1)
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			return nil
+		}
+
+		for _, peer := range global.Host.Peers {
+			str, _ := protocol.Encode(331, 1, port)
+			netdata.WriteMsg(peer.Conn, []byte(str))
+
+			for idx, tun := range peer.Tunnels {
+				if tun.Port == uint16(port) && tun.Proto == 2 {
+					tun.Closed = true
+					tun.UDPRemote.Close()
+
+					peer.Tunnels = slices.Delete(peer.Tunnels, idx, idx+1)
+				}
+			}
+		}
 	default:
 		global.App.Println("Illege protocol")
 	}

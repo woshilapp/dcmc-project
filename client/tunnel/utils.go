@@ -102,30 +102,30 @@ func TGetConnP(t *global.Tunnel, id uint32) net.Conn {
 	return t.TCPConns[id]
 }
 
-func UAddConnP(t *global.Tunnel, conn *net.UDPConn) uint32 {
+func UAddAddrP(t *global.Tunnel, addr net.Addr) uint32 {
 	t.Lock.Lock()
 	defer t.Lock.Unlock()
 
 	t.ID++
 	id := t.ID - 1
 
-	t.UDPConns[id] = conn
+	t.UDPAddrs[id] = addr
 
 	return id
 }
 
-func UDelConnP(t *global.Tunnel, id uint32) {
+func UDelAddrP(t *global.Tunnel, id uint32) {
 	t.Lock.Lock()
 	defer t.Lock.Unlock()
 
-	if _, exist := t.UDPConns[id]; !exist {
+	if _, exist := t.UDPAddrs[id]; !exist {
 		return
 	}
 
-	delete(t.UDPConns, id)
+	delete(t.UDPAddrs, id)
 }
 
-func UGetConnP(t *global.Tunnel, id uint32) *net.UDPConn {
+func UGetAddrP(t *global.Tunnel, id uint32) net.Addr {
 	t.Lock.RLock()
 	defer t.Lock.RUnlock()
 
@@ -133,5 +133,15 @@ func UGetConnP(t *global.Tunnel, id uint32) *net.UDPConn {
 		return nil
 	}
 
-	return t.UDPConns[id]
+	return t.UDPAddrs[id]
+}
+
+func UGetIDP(t *global.Tunnel, addr net.Addr) int {
+	for k, v := range t.UDPAddrs {
+		if v == addr {
+			return int(k)
+		}
+	}
+
+	return -1
 }

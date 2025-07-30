@@ -17,16 +17,18 @@ type Room struct {
 }
 
 type Tunnel struct {
-	Proto     int //1:tcp, 2:udp
-	Port      uint16
-	PunchID   int
-	ID        uint32
-	TCPConns  map[uint32]net.Conn //id:conn
-	UDPConns  map[uint32]*net.UDPConn
-	Lock      sync.RWMutex
-	Closed    bool //true = closed
-	TCPRemote net.Conn
-	UDPRemote *net.UDPConn
+	Proto         int //1:tcp, 2:udp
+	Port          uint16
+	PunchID       int
+	ID            uint32
+	TCPConns      map[uint32]net.Conn //id:conn
+	UDPConns      map[uint32]*net.UDPConn
+	UDPAddrs      map[uint32]net.Addr
+	Lock          sync.RWMutex
+	Closed        bool //true = closed
+	TCPRemote     net.Conn
+	UDPRemote     *net.UDPConn
+	UDPRemoteAddr net.Addr
 }
 
 type TPeer struct {

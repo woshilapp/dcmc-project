@@ -52,7 +52,7 @@ func HandleLocalPeer(t *global.Tunnel, conn net.Conn, id uint32) {
 
 		buf := make([]byte, 16*1024)
 
-		_, err := conn.Read(buf)
+		n, err := conn.Read(buf)
 		if err != nil {
 			fmt.Println("err222", err)
 
@@ -63,7 +63,7 @@ func HandleLocalPeer(t *global.Tunnel, conn net.Conn, id uint32) {
 		}
 		// fmt.Println("PRL:", string(buf))
 
-		err = netdata.TunnelTCPWrite(id, 1, t.TCPRemote, buf)
+		err = netdata.TunnelTCPWrite(id, 1, t.TCPRemote, buf[:n])
 		if err != nil {
 			fmt.Println("errwrt", err)
 			return
@@ -90,5 +90,66 @@ func ListenLocal(t *global.Tunnel) {
 		id := TAddConnP(t, conn)
 
 		go HandleLocalPeer(t, conn, id)
+	}
+}
+
+func HandleUDPRemotePeer(t *global.Tunnel, localconn *net.UDPConn) {
+	for {
+		if t.Closed {
+			return
+		}
+
+		id, _, data, err := netdata.TunnelUDPRead(t.UDPRemote)
+		if err != nil {
+			fmt.Println("RemoteERR")
+			return
+		}
+		// fmt.Println("PRR:", string(data))
+
+		peer_addr := UGetAddrP(t, id)
+		if peer_addr == nil {
+			continue
+		}
+
+		_, err = localconn.WriteTo(data, peer_addr)
+		if err != nil {
+			fmt.Println("udpwerr")
+			return
+		}
+	}
+}
+
+func UDPListenLocal(t *global.Tunnel) {
+	buf := make([]byte, 16*1024)
+
+	listaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.2:"+strconv.Itoa(int(t.Port)))
+	listener, err := net.DialUDP("tcp", listaddr, nil)
+	if err != nil {
+		fmt.Println("[ERROR]", err)
+	}
+
+	go HandleUDPRemotePeer(t, listener)
+
+	for {
+		if t.Closed {
+			return
+		}
+
+		n, addr, err := listener.ReadFrom(buf)
+		if err != nil {
+			fmt.Println("[ERROR]", err)
+		}
+
+		var id int
+
+		if id = UGetIDP(t, addr); id == -1 {
+			id = int(UAddAddrP(t, addr))
+		}
+
+		err = netdata.TunnelUDPWrite(uint32(id), t.UDPRemote, t.UDPRemoteAddr, buf[:n])
+		if err != nil {
+			fmt.Println("err1123")
+			return
+		}
 	}
 }

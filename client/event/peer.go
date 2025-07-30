@@ -35,6 +35,7 @@ func InitPeerEvent() {
 	protocol.RegTCPEvent(340, handleMsg, protocol.StringType, protocol.StringType)
 	protocol.RegTCPEvent(341, handleHostBroadcast, protocol.StringType)
 	protocol.RegTCPEvent(342, handleMuted, protocol.StringType, protocol.IntType)
+	protocol.RegUDPEvent(120, handleUDPNoticePunchPeer, protocol.IntType, protocol.StringType)
 }
 
 func handleEnterRoom(conn net.Conn, args ...any) {
@@ -116,7 +117,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 
 				fmt.Println("From Host recv:", string(data))
 
-				network.ProcEvent(host_conn, data)
+				network.ProcTCPEvent(host_conn, data)
 			}
 		}()
 
@@ -135,22 +136,42 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 			return
 		}
 
-		switch tun.Proto {
-		case 1:
-			host_conn, err := network.PunchPeer(tun.TCPRemote, host_addr, false)
-			if err != nil {
-				fmt.Println("Punch tcp/" + strconv.Itoa(int(tun.Port)) + " failed")
-				return
-			}
-			tun.TCPRemote = host_conn
+		// tcp
+		host_conn, err := network.PunchPeer(tun.TCPRemote, host_addr, false)
+		if err != nil {
+			fmt.Println("Punch tcp/" + strconv.Itoa(int(tun.Port)) + " failed")
+			return
+		}
+		tun.TCPRemote = host_conn
 
-			//handle host tunnel
-			go tunnel.HandleRemotePeer(tun, host_conn)
-			go tunnel.ListenLocal(tun)
-		case 2:
+		//handle host tunnel
+		go tunnel.HandleRemotePeer(tun, host_conn)
+		go tunnel.ListenLocal(tun)
+	}
+}
 
+func handleUDPNoticePunchPeer(conn *net.UDPConn, addr net.Addr, args ...any) {
+	punch_id := args[1].(int)
+	host_addr, _ := net.ResolveUDPAddr("udp", args[2].(string))
+
+	var tun *global.Tunnel
+	for _, t := range global.Peer.Tunnels {
+		if t.PunchID == punch_id {
+			tun = t
 		}
 	}
+	if tun == nil {
+		return
+	}
+
+	for i := 3; i > 0; i-- {
+		tun.UDPRemote.WriteTo([]byte("200"), host_addr)
+	}
+
+	tun.UDPRemoteAddr = host_addr
+
+	// handle host
+	go tunnel.UDPListenLocal(tun)
 }
 
 func handleReqPwd(conn net.Conn, args ...any) {
@@ -258,7 +279,30 @@ func handlePunchPort(conn net.Conn, args ...any) {
 		str, _ := protocol.Encode(203, punch_id)
 		netdata.WriteMsg(tmp_conn, []byte(str))
 	case 2:
-		//udp
+		global.App.Println("Punch remote port udp/" + strport + " at local 127.0.0.2:" + strport)
+
+		p := &global.Tunnel{
+			Port:     uint16(port),
+			Proto:    proto,
+			PunchID:  punch_id,
+			Lock:     sync.RWMutex{},
+			Closed:   false,
+			TCPConns: map[uint32]net.Conn{},
+		}
+		global.Peer.Tunnels = append(global.Peer.Tunnels, p)
+
+		sock, err := net.DialUDP("udp", nil, nil)
+		if err != nil {
+			fmt.Println("UDP sock dial failed")
+			return
+		}
+
+		p.UDPRemote = sock
+
+		go network.HandleUDP(sock)
+
+		str, _ := protocol.Encode(203, punch_id)
+		sock.WriteTo([]byte(str), global.Serveraddr)
 	}
 }
 
@@ -283,6 +327,7 @@ func handleClosePort(conn net.Conn, args ...any) {
 	case 1:
 		global.App.Println("Host Closed Port tcp/" + strport)
 
+		tun.Closed = true
 		tun.TCPRemote.Close()
 		for _, c := range tun.TCPConns {
 			c.Close()
@@ -290,6 +335,11 @@ func handleClosePort(conn net.Conn, args ...any) {
 
 		global.Peer.Tunnels = slices.Delete(global.Peer.Tunnels, tunidx, tunidx+1)
 	case 2:
-		//udp
+		global.App.Println("Host Closed Port udp/" + strport)
+
+		tun.Closed = true
+		tun.UDPRemote.Close()
+
+		global.Peer.Tunnels = slices.Delete(global.Peer.Tunnels, tunidx, tunidx+1)
 	}
 }

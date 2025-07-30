@@ -25,6 +25,7 @@ func InitHostEvent() {
 	protocol.RegTCPEvent(211, handlePeerName, protocol.StringType)
 	protocol.RegTCPEvent(212, handlePeerReqList)
 	protocol.RegTCPEvent(230, handlePeerMsg, protocol.StringType)
+	protocol.RegUDPEvent(120, handleUDPNoticePunchHost, protocol.IntType, protocol.StringType)
 }
 
 func handleCreateRoom(conn net.Conn, args ...any) {
@@ -145,10 +146,25 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 
 				fmt.Println("From Peer recv:", string(data))
 
-				network.ProcEvent(peer_conn, data)
+				network.ProcTCPEvent(peer_conn, data)
 			}
 		}()
 	}
+}
+
+func handleUDPNoticePunchHost(conn *net.UDPConn, addr net.Addr, args ...any) {
+	punch_id := args[1].(int)
+	peer_addr, _ := net.ResolveUDPAddr("udp", args[2].(string))
+
+	tun := global.Host.PIDtun[punch_id]
+
+	for i := 3; i > 0; i-- {
+		tun.UDPRemote.WriteTo([]byte("300"), peer_addr)
+	}
+
+	delete(global.Host.PIDtun, punch_id)
+
+	go tunnel.HandleUDPRemoteHost(tun, conn)
 }
 
 func handlePeerHello(conn net.Conn, args ...any) {

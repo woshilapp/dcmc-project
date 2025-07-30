@@ -13,7 +13,28 @@ import (
 	reuse "github.com/libp2p/go-reuseport"
 )
 
-func ProcEvent(conn net.Conn, data []byte) {
+func ProcUDPEvent(sock *net.UDPConn, addr net.Addr, data []byte) int {
+	event, err := protocol.Decode(string(data))
+	if err != nil {
+		global.App.Println("[ERRORdc]", err)
+		return -1
+	}
+
+	err = protocol.VaildateTCPEvent(event...)
+	if err != nil {
+		global.App.Println("[BADEvent]", err, event)
+		return -1
+	}
+
+	if event[0].(int) == 120 {
+		protocol.ExecUDPEvent(sock, addr, event...)
+		return 0
+	} else {
+		return 1
+	}
+}
+
+func ProcTCPEvent(conn net.Conn, data []byte) {
 	event, err := protocol.Decode(string(data))
 	if err != nil {
 		global.App.Println("[ERRORdc]", err)
@@ -40,7 +61,7 @@ func HandleConn(conn net.Conn) {
 
 		global.App.Println("[Recv Server TCP]", string(data))
 
-		ProcEvent(conn, data)
+		ProcTCPEvent(conn, data)
 	}
 }
 
@@ -53,7 +74,25 @@ func HandlePunchConn(conn net.Conn) {
 
 		global.App.Println("[Recv Server TCP]", string(data))
 
-		ProcEvent(conn, data)
+		ProcTCPEvent(conn, data)
+	}
+}
+
+func HandleUDP(sock *net.UDPConn) {
+	for {
+		buf := make([]byte, 1024)
+
+		n, addr, err := sock.ReadFrom(buf)
+		if err != nil {
+			fmt.Println("[ERRORru]", err)
+		}
+
+		data := buf[:n]
+
+		status := ProcUDPEvent(sock, addr, data)
+		if status == 0 {
+			return
+		}
 	}
 }
 

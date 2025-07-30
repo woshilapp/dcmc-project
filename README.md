@@ -1,5 +1,5 @@
 # dcmc-project
-Direct Connection Minecraft Project
+Direct Connection Minecraft Project(unfinished)
 
 ## Introduction
 

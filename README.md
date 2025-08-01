@@ -1,6 +1,10 @@
 # dcmc-project
 Direct Connection Minecraft Project(unfinished)
 
+## Important
+It's a unfinish project. It can't run properly and keep it's security. Code still shit
+and I haven't tidy it.
+
 ## Introduction
 
 DCMC (Direct Connection Minecraft) is a network communication tool developed in Go language, designed to establish direct connections between clients without relying on central servers. The project implements NAT traversal technology and room management mechanisms to enable peer-to-peer communication in distributed environments.

@@ -25,7 +25,7 @@ func InitHostEvent() {
 	protocol.RegTCPEvent(211, handlePeerName, protocol.StringType)
 	protocol.RegTCPEvent(212, handlePeerReqList)
 	protocol.RegTCPEvent(230, handlePeerMsg, protocol.StringType)
-	protocol.RegUDPEvent(120, handleUDPNoticePunchHost, protocol.IntType, protocol.StringType)
+	protocol.RegUDPEvent(122, handleUDPNoticePunchHost, protocol.IntType, protocol.StringType)
 }
 
 func handleCreateRoom(conn net.Conn, args ...any) {
@@ -41,7 +41,7 @@ func handleNewPeer(conn net.Conn, args ...any) {
 
 	punch_id := args[1].(int)
 
-	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
+	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 	if err != nil {
 		fmt.Println("Punch connect server failed")
 		return
@@ -138,7 +138,7 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 							global.CurrRoom.Description,
 							global.CurrRoom.RequiredPwd,
 						)
-						netdata.WriteMsg(global.Serverconn, []byte(str))
+						netdata.WriteMsg(global.ServerConn, []byte(str))
 					}
 
 					return
@@ -161,6 +161,8 @@ func handleUDPNoticePunchHost(conn *net.UDPConn, addr net.Addr, args ...any) {
 	for i := 3; i > 0; i-- {
 		tun.UDPRemote.WriteTo([]byte("300"), peer_addr)
 	}
+
+	tun.UDPRemoteAddr = peer_addr
 
 	delete(global.Host.PIDtun, punch_id)
 
@@ -193,7 +195,7 @@ func handlePeerHello(conn net.Conn, args ...any) {
 		global.CurrRoom.Description,
 		global.CurrRoom.RequiredPwd,
 	)
-	netdata.WriteMsg(global.Serverconn, []byte(str1))
+	netdata.WriteMsg(global.ServerConn, []byte(str1))
 
 	tunnel.HandleNewPeer(peer)
 }
@@ -230,7 +232,7 @@ func handlePeerPasswd(conn net.Conn, args ...any) {
 		global.CurrRoom.Description,
 		global.CurrRoom.RequiredPwd,
 	)
-	netdata.WriteMsg(global.Serverconn, []byte(str1))
+	netdata.WriteMsg(global.ServerConn, []byte(str1))
 
 	tunnel.HandleNewPeer(peer)
 }

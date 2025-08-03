@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/woshilapp/dcmc-project/client/event"
@@ -33,9 +32,9 @@ func main() {
 
 	global.App = term.NewTerminal("dcmc-project client")
 
-	global.Serveraddr, _ = net.ResolveUDPAddr("udp", "127.0.0.1:7789")
-	localaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
-	global.Udpsock, _ = net.ListenUDP("udp", localaddr)
+	// global.Serveraddr, _ = net.ResolveUDPAddr("udp", "127.0.0.1:7789")
+	// localaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+	// global.Udpsock, _ = net.ListenUDP("udp", localaddr)
 
 	shell.InitCommand()
 

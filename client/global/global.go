@@ -63,11 +63,12 @@ var Roomlist []Room = []Room{}
 var CurrRoom Room
 
 var (
-	Serverconn net.Conn
-	Serveraddr net.Addr
-	Udpsock    *net.UDPConn
-	App        *grumble.App
-	Role       int = 1 //1:peer, 2:host
+	ServerConn    net.Conn
+	ServerAddr    net.Addr
+	ServerUDPAddr net.Addr
+	Udpsock       *net.UDPConn
+	App           *grumble.App
+	Role          int = 1 //1:peer, 2:host
 )
 
 var Host THost = THost{

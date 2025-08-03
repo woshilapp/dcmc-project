@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/woshilapp/dcmc-project/client/global"
@@ -14,7 +15,7 @@ import (
 )
 
 func TCPPunchHost(peer *global.TPeers, port uint16) {
-	netdata.WriteMsg(global.Serverconn, []byte("301"))
+	netdata.WriteMsg(global.ServerConn, []byte("301"))
 
 	punch_id := <-global.Host.PunchIDs
 	tun := &global.Tunnel{
@@ -30,7 +31,7 @@ func TCPPunchHost(peer *global.TPeers, port uint16) {
 	str, _ := protocol.Encode(330, punch_id, 1, port)
 	netdata.WriteMsg(peer.Conn, []byte(str))
 
-	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
+	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 	if err != nil {
 		fmt.Println("Punch connect server failed")
 		return
@@ -46,11 +47,11 @@ func TCPPunchHost(peer *global.TPeers, port uint16) {
 }
 
 func UDPPunchHost(peer *global.TPeers, port uint16) {
-	netdata.WriteMsg(global.Serverconn, []byte("301"))
+	netdata.WriteMsg(global.ServerConn, []byte("301"))
 
 	punch_id := <-global.Host.PunchIDs
 	tun := &global.Tunnel{
-		Proto:    1,
+		Proto:    2,
 		Port:     port,
 		PunchID:  punch_id,
 		Lock:     sync.RWMutex{},
@@ -62,15 +63,17 @@ func UDPPunchHost(peer *global.TPeers, port uint16) {
 	str, _ := protocol.Encode(330, punch_id, 2, port)
 	netdata.WriteMsg(peer.Conn, []byte(str))
 
-	sock, err := net.DialUDP("udp", nil, nil)
+	localaddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:0")
+	sock, err := net.ListenUDP("udp", localaddr)
 	if err != nil {
-		fmt.Println("Punch Listen Err")
+		fmt.Println("Punch Listen Err", err)
+		return
 	}
 
 	go network.HandleUDP(sock)
 
 	str, _ = protocol.Encode(302, punch_id)
-	sock.WriteTo([]byte(str), global.Serveraddr)
+	sock.WriteTo([]byte(str), global.ServerUDPAddr)
 
 	tun.UDPRemote = sock
 	global.Host.PIDtun[punch_id] = tun
@@ -159,23 +162,30 @@ func HandleLocalHost(t *global.Tunnel, conn net.Conn, id uint32) {
 func HandleUDPRemoteHost(t *global.Tunnel, conn *net.UDPConn) {
 	localaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:"+strconv.Itoa(int(t.Port)))
 
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			// not protocol, won't to data layer
+			t.UDPRemote.WriteTo([]byte("keepalive"), t.UDPRemoteAddr)
+		}
+	}()
+
 	for {
 		if t.Closed {
 			return
 		}
 
-		id, addr, data, err := netdata.TunnelUDPRead(conn)
-		if err != nil {
+		id, _, data, err := netdata.TunnelUDPRead(conn)
+		if err != nil && err.Error() != "not dcmc protocol" {
 			return
 		}
-		if addr != t.UDPRemoteAddr {
-			continue
-		}
 		// fmt.Println("HRR:", string(data))
+		fmt.Println("UTR3:", data)
 
 		peerconn := UGetConnH(t, id)
 		if peerconn == nil {
-			peerconn, err := net.DialUDP("udp", nil, nil)
+			localaddra, _ := net.ResolveUDPAddr("udp", "0.0.0.0:0")
+			peerconn, err := net.ListenUDP("udp", localaddra)
 			if err != nil {
 				fmt.Println("err111", err)
 				continue
@@ -197,24 +207,20 @@ func HandleUDPRemoteHost(t *global.Tunnel, conn *net.UDPConn) {
 }
 
 func HandleUDPLocalHost(t *global.Tunnel, conn *net.UDPConn, id uint32) {
-	localaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:"+strconv.Itoa(int(t.Port)))
-
 	for {
 		if t.Closed {
 			return
 		}
 
-		buf := make([]byte, 16*1024)
+		buf := make([]byte, 64*1024)
 
-		n, addr, err := conn.ReadFrom(buf)
+		n, _, err := conn.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("err444", err)
 			UDelConnH(t, id)
 			return
 		}
-		if addr != localaddr {
-			continue
-		}
+		fmt.Println("UTR4:", buf[:n])
 		// fmt.Println("HRL:", string(buf))
 
 		err = netdata.TunnelUDPWrite(id, t.UDPRemote, t.UDPRemoteAddr, buf[:n])

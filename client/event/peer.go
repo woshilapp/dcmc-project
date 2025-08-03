@@ -35,7 +35,7 @@ func InitPeerEvent() {
 	protocol.RegTCPEvent(340, handleMsg, protocol.StringType, protocol.StringType)
 	protocol.RegTCPEvent(341, handleHostBroadcast, protocol.StringType)
 	protocol.RegTCPEvent(342, handleMuted, protocol.StringType, protocol.IntType)
-	protocol.RegUDPEvent(120, handleUDPNoticePunchPeer, protocol.IntType, protocol.StringType)
+	protocol.RegUDPEvent(122, handleUDPNoticePunchPeer, protocol.IntType, protocol.StringType)
 }
 
 func handleEnterRoom(conn net.Conn, args ...any) {
@@ -69,7 +69,7 @@ func handlePunchHostID(conn net.Conn, args ...any) {
 
 	global.Peer.Status = 1
 
-	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
+	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 	if err != nil {
 		fmt.Println("Punch connect server failed")
 		return
@@ -112,6 +112,25 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 				data, err := netdata.ReadMsg(host_conn)
 				if err != nil {
 					fmt.Println("Disconnect from host")
+
+					//clean up
+					global.Peer.Status = 0
+					global.Peer.HostConn.Close()
+					terminal.SetPrompt(global.App, ">")
+					global.CurrRoom = global.Room{}
+
+					for _, t := range global.Peer.Tunnels {
+						t.Closed = true
+
+						for _, c := range t.TCPConns {
+							c.Close()
+						}
+
+						if t.UDPRemote != nil {
+							t.UDPRemote.Close()
+						}
+					}
+
 					return
 				}
 
@@ -266,7 +285,7 @@ func handlePunchPort(conn net.Conn, args ...any) {
 		}
 		global.Peer.Tunnels = append(global.Peer.Tunnels, p)
 
-		tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.Serveraddr.String())
+		tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 		if err != nil {
 			fmt.Println("Punch connect server failed")
 			return
@@ -287,13 +306,14 @@ func handlePunchPort(conn net.Conn, args ...any) {
 			PunchID:  punch_id,
 			Lock:     sync.RWMutex{},
 			Closed:   false,
-			TCPConns: map[uint32]net.Conn{},
+			UDPAddrs: map[uint32]net.Addr{},
 		}
 		global.Peer.Tunnels = append(global.Peer.Tunnels, p)
 
-		sock, err := net.DialUDP("udp", nil, nil)
+		localaddr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:0")
+		sock, err := net.ListenUDP("udp", localaddr)
 		if err != nil {
-			fmt.Println("UDP sock dial failed")
+			fmt.Println("UDP sock dial failed", err)
 			return
 		}
 
@@ -302,7 +322,7 @@ func handlePunchPort(conn net.Conn, args ...any) {
 		go network.HandleUDP(sock)
 
 		str, _ := protocol.Encode(203, punch_id)
-		sock.WriteTo([]byte(str), global.Serveraddr)
+		sock.WriteTo([]byte(str), global.ServerUDPAddr)
 	}
 }
 

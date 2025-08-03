@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net"
+
+	"github.com/woshilapp/dcmc-project/client/global"
 )
 
 const MaxMsgLength = 1024 * 100 //100KB
@@ -95,11 +97,13 @@ func TunnelUDPWrite(id uint32, conn *net.UDPConn, dest net.Addr, data []byte) er
 }
 
 func TunnelUDPRead(conn *net.UDPConn) (uint32, net.Addr, []byte, error) {
-	data := make([]byte, 16*1024)
+	data := make([]byte, 64*1024)
+
 	n, addr, err := conn.ReadFrom(data)
 	if err != nil {
 		return 0, nil, nil, err
 	}
+	global.App.Println("UDPTUN: ", data[:n])
 
 	header := data[:2]
 	proto := binary.BigEndian.Uint16(header[:2])

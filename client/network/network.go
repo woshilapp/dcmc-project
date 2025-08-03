@@ -20,13 +20,13 @@ func ProcUDPEvent(sock *net.UDPConn, addr net.Addr, data []byte) int {
 		return -1
 	}
 
-	err = protocol.VaildateTCPEvent(event...)
+	err = protocol.VaildateUDPEvent(event...)
 	if err != nil {
 		global.App.Println("[BADEvent]", err, event)
 		return -1
 	}
 
-	if event[0].(int) == 120 {
+	if event[0].(int) == 122 {
 		protocol.ExecUDPEvent(sock, addr, event...)
 		return 0
 	} else {
@@ -85,9 +85,11 @@ func HandleUDP(sock *net.UDPConn) {
 		n, addr, err := sock.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("[ERRORru]", err)
+			return
 		}
 
 		data := buf[:n]
+		global.App.Println("[Recv UDP]", string(data))
 
 		status := ProcUDPEvent(sock, addr, data)
 		if status == 0 {

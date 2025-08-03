@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/woshilapp/dcmc-project/client/global"
 	netdata "github.com/woshilapp/dcmc-project/network"
@@ -94,17 +95,25 @@ func ListenLocal(t *global.Tunnel) {
 }
 
 func HandleUDPRemotePeer(t *global.Tunnel, localconn *net.UDPConn) {
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			// not protocol, won't to data layer
+			t.UDPRemote.WriteTo([]byte("keepalive"), t.UDPRemoteAddr)
+		}
+	}()
+
 	for {
 		if t.Closed {
 			return
 		}
 
 		id, _, data, err := netdata.TunnelUDPRead(t.UDPRemote)
-		if err != nil {
-			fmt.Println("RemoteERR")
+		if err != nil && err.Error() != "not dcmc protocol" {
+			fmt.Println("RemoteERR", err)
 			return
 		}
-		// fmt.Println("PRR:", string(data))
+		fmt.Println("UTR1:", data)
 
 		peer_addr := UGetAddrP(t, id)
 		if peer_addr == nil {
@@ -120,10 +129,10 @@ func HandleUDPRemotePeer(t *global.Tunnel, localconn *net.UDPConn) {
 }
 
 func UDPListenLocal(t *global.Tunnel) {
-	buf := make([]byte, 16*1024)
+	buf := make([]byte, 64*1024)
 
 	listaddr, _ := net.ResolveUDPAddr("udp", "127.0.0.2:"+strconv.Itoa(int(t.Port)))
-	listener, err := net.DialUDP("tcp", listaddr, nil)
+	listener, err := net.ListenUDP("udp", listaddr)
 	if err != nil {
 		fmt.Println("[ERROR]", err)
 	}
@@ -132,13 +141,16 @@ func UDPListenLocal(t *global.Tunnel) {
 
 	for {
 		if t.Closed {
+			listener.Close()
 			return
 		}
 
 		n, addr, err := listener.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("[ERROR]", err)
+			return
 		}
+		fmt.Println("UTR2:", buf[:n])
 
 		var id int
 

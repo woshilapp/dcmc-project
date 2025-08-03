@@ -6,7 +6,7 @@ optional: any
 
 structure:
     2bytes(id)|4bytes(len)|code|any1|any2...
-    (bytes, int, any, any...)
+    (bytes, int, int, any, any...)
 
 id must be two bytes: 0xDC, 0x3C
 

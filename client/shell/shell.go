@@ -84,8 +84,9 @@ func connectToServer(context *grumble.Context) error {
 		return nil
 	}
 
-	global.Serverconn = conn
-	global.Serveraddr, _ = net.ResolveTCPAddr("tcp", context.Args.String("addr"))
+	global.ServerConn = conn
+	global.ServerAddr, _ = net.ResolveTCPAddr("tcp", context.Args.String("addr"))
+	global.ServerUDPAddr, _ = net.ResolveUDPAddr("udp", context.Args.String("addr"))
 
 	go network.HandleConn(conn)
 
@@ -108,7 +109,7 @@ func connectToServer(context *grumble.Context) error {
 
 func sendToServer(context *grumble.Context) error {
 	// _, err := serverconn.Write([]byte(context.Args.String("text")))
-	err := netdata.WriteMsg(global.Serverconn, []byte(context.Args.String("text")))
+	err := netdata.WriteMsg(global.ServerConn, []byte(context.Args.String("text")))
 
 	if err != nil {
 		context.App.Println("[ERRORst]", err)
@@ -165,7 +166,7 @@ func sendEncodedToServer(context *grumble.Context) error {
 	data := []byte(tmp)
 
 	// _, err := serverconn.Write(data)
-	err := netdata.WriteMsg(global.Serverconn, data)
+	err := netdata.WriteMsg(global.ServerConn, data)
 
 	if err != nil {
 		context.App.Println("[ERRORst]", err)
@@ -195,7 +196,7 @@ func sendUDPEncodedToServer(context *grumble.Context) error {
 	tmp, _ := protocol.Encode(args...)
 	data := []byte(tmp)
 
-	_, err := global.Udpsock.WriteTo(data, global.Serveraddr)
+	_, err := global.Udpsock.WriteTo(data, global.ServerUDPAddr)
 
 	if err != nil {
 		context.App.Println("[ERRORsu]", err)
@@ -210,7 +211,7 @@ func listRoom(context *grumble.Context) error {
 	global.Roomlist = []global.Room{}
 
 	str, _ := protocol.Encode(202)
-	netdata.WriteMsg(global.Serverconn, []byte(str))
+	netdata.WriteMsg(global.ServerConn, []byte(str))
 
 	return nil
 }
@@ -227,7 +228,7 @@ func enterRoom(context *grumble.Context) error {
 	}
 
 	str, _ := protocol.Encode(201, id)
-	netdata.WriteMsg(global.Serverconn, []byte(str))
+	netdata.WriteMsg(global.ServerConn, []byte(str))
 
 	return nil
 }
@@ -268,7 +269,7 @@ func createRoom(context *grumble.Context) error {
 		global.CurrRoom.RequiredPwd,
 	)
 
-	netdata.WriteMsg(global.Serverconn, []byte(str))
+	netdata.WriteMsg(global.ServerConn, []byte(str))
 
 	return nil
 }
@@ -289,7 +290,7 @@ func setPasswd(context *grumble.Context) error {
 
 		str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, true)
 
-		netdata.WriteMsg(global.Serverconn, []byte(str))
+		netdata.WriteMsg(global.ServerConn, []byte(str))
 	}
 
 	return nil
@@ -305,7 +306,7 @@ func clrPasswd(context *grumble.Context) error {
 
 	str, _ := protocol.Encode(312, global.CurrRoom.Id, global.CurrRoom.Description, false)
 
-	netdata.WriteMsg(global.Serverconn, []byte(str))
+	netdata.WriteMsg(global.ServerConn, []byte(str))
 
 	return nil
 }

@@ -144,7 +144,7 @@ func handleNoticePunchHost(conn net.Conn, args ...any) {
 					return
 				}
 
-				fmt.Println("From Peer recv:", string(data))
+				// fmt.Println("From Peer recv:", string(data))
 
 				network.ProcTCPEvent(peer_conn, data)
 			}

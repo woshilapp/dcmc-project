@@ -59,7 +59,7 @@ func HandleConn(conn net.Conn) {
 			return
 		}
 
-		global.App.Println("[Recv Server TCP]", string(data))
+		// global.App.Println("[Recv Server TCP]", string(data))
 
 		ProcTCPEvent(conn, data)
 	}
@@ -72,7 +72,7 @@ func HandlePunchConn(conn net.Conn) {
 			return
 		}
 
-		global.App.Println("[Recv Server TCP]", string(data))
+		// global.App.Println("[Recv Server TCP]", string(data))
 
 		ProcTCPEvent(conn, data)
 	}
@@ -89,7 +89,7 @@ func HandleUDP(sock *net.UDPConn) {
 		}
 
 		data := buf[:n]
-		global.App.Println("[Recv UDP]", string(data))
+		// global.App.Println("[Recv UDP]", string(data))
 
 		status := ProcUDPEvent(sock, addr, data)
 		if status == 0 {
@@ -161,5 +161,4 @@ func PunchPeer(conn net.Conn, peer_addr string, isHost bool) (net.Conn, error) {
 	case <-timer.C:
 		return nil, errors.New("wait peer timeout")
 	}
-
 }

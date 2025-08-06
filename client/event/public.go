@@ -8,6 +8,7 @@ import (
 )
 
 func InitEvent() {
+	protocol.RegTCPEvent(100, func(c net.Conn, a ...any) {})
 	protocol.RegTCPEvent(101, recvRoomList, protocol.StringAnyType)
 	protocol.RegTCPEvent(102, printRoomList)
 	protocol.RegTCPEvent(113, handleServerBroadcast, protocol.StringType)

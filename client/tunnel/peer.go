@@ -22,7 +22,6 @@ func HandleRemotePeer(t *global.Tunnel, conn net.Conn) {
 			fmt.Println("RemoteERR")
 			return
 		}
-		// fmt.Println("PRR:", string(data))
 
 		peerconn := TGetConnP(t, id)
 		if peerconn == nil {
@@ -62,7 +61,6 @@ func HandleLocalPeer(t *global.Tunnel, conn net.Conn, id uint32) {
 
 			return
 		}
-		// fmt.Println("PRL:", string(buf))
 
 		err = netdata.TunnelTCPWrite(id, 1, t.TCPRemote, buf[:n])
 		if err != nil {
@@ -109,11 +107,14 @@ func HandleUDPRemotePeer(t *global.Tunnel, localconn *net.UDPConn) {
 		}
 
 		id, _, data, err := netdata.TunnelUDPRead(t.UDPRemote)
-		if err != nil && err.Error() != "not dcmc protocol" {
+		if err != nil {
+			if err.Error() == "not dcmc protocol" {
+				continue
+			}
+
 			fmt.Println("RemoteERR", err)
 			return
 		}
-		fmt.Println("UTR1:", data)
 
 		peer_addr := UGetAddrP(t, id)
 		if peer_addr == nil {
@@ -150,7 +151,6 @@ func UDPListenLocal(t *global.Tunnel) {
 			fmt.Println("[ERROR]", err)
 			return
 		}
-		fmt.Println("UTR2:", buf[:n])
 
 		var id int
 

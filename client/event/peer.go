@@ -71,7 +71,7 @@ func handlePunchHostID(conn net.Conn, args ...any) {
 
 	tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 	if err != nil {
-		fmt.Println("Punch connect server failed")
+		global.App.Println("Punch connect server failed")
 		return
 	}
 
@@ -92,7 +92,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 
 		host_conn, err := network.PunchPeer(global.Peer.HostConn, host_addr, false)
 		if err != nil {
-			fmt.Println("Connect to host failed")
+			global.App.Println("Connect to host failed")
 
 			//clean up
 			global.Peer.Status = 0
@@ -111,7 +111,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 			for {
 				data, err := netdata.ReadMsg(host_conn)
 				if err != nil {
-					fmt.Println("Disconnect from host")
+					global.App.Println("Disconnect from host")
 
 					//clean up
 					global.Peer.Status = 0
@@ -134,7 +134,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 					return
 				}
 
-				fmt.Println("From Host recv:", string(data))
+				// fmt.Println("From Host recv:", string(data))
 
 				network.ProcTCPEvent(host_conn, data)
 			}
@@ -158,7 +158,7 @@ func handleNoticePunchPeer(conn net.Conn, args ...any) {
 		// tcp
 		host_conn, err := network.PunchPeer(tun.TCPRemote, host_addr, false)
 		if err != nil {
-			fmt.Println("Punch tcp/" + strconv.Itoa(int(tun.Port)) + " failed")
+			global.App.Println("Punch tcp/" + strconv.Itoa(int(tun.Port)) + " failed")
 			return
 		}
 		tun.TCPRemote = host_conn
@@ -287,7 +287,7 @@ func handlePunchPort(conn net.Conn, args ...any) {
 
 		tmp_conn, err := reuse.Dial("tcp", "0.0.0.0:0", global.ServerAddr.String())
 		if err != nil {
-			fmt.Println("Punch connect server failed")
+			global.App.Println("Punch connect server failed")
 			return
 		}
 

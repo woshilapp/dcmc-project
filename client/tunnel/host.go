@@ -100,7 +100,6 @@ func HandleRemoteHost(t *global.Tunnel, conn net.Conn) {
 		if err != nil {
 			return
 		}
-		// fmt.Println("HRR:", string(data))
 
 		peerconn := TGetConnH(t, id)
 		if peerconn == nil {
@@ -149,7 +148,6 @@ func HandleLocalHost(t *global.Tunnel, conn net.Conn, id uint32) {
 			netdata.TunnelTCPWrite(id, 0, t.TCPRemote, []byte{})
 			return
 		}
-		// fmt.Println("HRL:", string(buf))
 
 		err = netdata.TunnelTCPWrite(id, 1, t.TCPRemote, buf[:n])
 		if err != nil {
@@ -176,11 +174,14 @@ func HandleUDPRemoteHost(t *global.Tunnel, conn *net.UDPConn) {
 		}
 
 		id, _, data, err := netdata.TunnelUDPRead(conn)
-		if err != nil && err.Error() != "not dcmc protocol" {
+		if err != nil {
+			if err.Error() == "not dcmc protocol" {
+				continue
+			}
+
+			fmt.Println("RemoteERR", err)
 			return
 		}
-		// fmt.Println("HRR:", string(data))
-		fmt.Println("UTR3:", data)
 
 		peerconn := UGetConnH(t, id)
 		if peerconn == nil {
@@ -220,8 +221,6 @@ func HandleUDPLocalHost(t *global.Tunnel, conn *net.UDPConn, id uint32) {
 			UDelConnH(t, id)
 			return
 		}
-		fmt.Println("UTR4:", buf[:n])
-		// fmt.Println("HRL:", string(buf))
 
 		err = netdata.TunnelUDPWrite(id, t.UDPRemote, t.UDPRemoteAddr, buf[:n])
 		if err != nil {

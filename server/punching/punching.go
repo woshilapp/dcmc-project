@@ -49,15 +49,17 @@ func NoticePunching(punch_id int, host_conn net.Conn, peer_conn net.Conn) {
 }
 
 func NoticeUDPPunching(conn *net.UDPConn, punch_id int, host_addr net.Addr, peer_addr net.Addr) {
-	msgh, _ := protocol.Encode(122, punch_id, peer_addr.String())
-	_, errh := conn.WriteTo([]byte(msgh), host_addr)
-	if errh != nil {
-		return
-	}
+	for i := 0; i < 3; i++ { // increase punching success
+		msgh, _ := protocol.Encode(122, punch_id, peer_addr.String())
+		_, errh := conn.WriteTo([]byte(msgh), host_addr)
+		if errh != nil {
+			return
+		}
 
-	msgp, _ := protocol.Encode(122, punch_id, host_addr.String())
-	_, errp := conn.WriteTo([]byte(msgp), peer_addr)
-	if errp != nil {
-		return
+		msgp, _ := protocol.Encode(122, punch_id, host_addr.String())
+		_, errp := conn.WriteTo([]byte(msgp), peer_addr)
+		if errp != nil {
+			return
+		}
 	}
 }

@@ -129,7 +129,7 @@ func UGetAddrP(t *global.Tunnel, id uint32) net.Addr {
 	t.Lock.RLock()
 	defer t.Lock.RUnlock()
 
-	if _, exist := t.UDPConns[id]; !exist {
+	if _, exist := t.UDPAddrs[id]; !exist {
 		return nil
 	}
 

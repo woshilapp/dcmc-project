@@ -19,7 +19,7 @@ DCMC (Direct Connection Minecraft) is a network communication tool developed in 
 
 ## Requires
 
-- Go 1.23.3 or later
+- Go 1.24.2 or later
 
 ## Protocol
 

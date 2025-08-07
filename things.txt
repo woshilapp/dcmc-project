@@ -1,17 +1,6 @@
 TODO:
-    real:
-        add error to "protocol/format.go" Decode() #done
-        end protocol develop #done
-        eventmanager #done
-        bigEndian avoid merge and split #done
-        base room(server) #done
-        clear #done
-        auto tcp, udp punching hole(server) #done
-        update protocol.go #done
-        addr check #done
-        
-        room #doing
-        auto tcp, udp punching hole(real)
+    broadcast
+    ban, mute
 
 protocol:
     type: string,
